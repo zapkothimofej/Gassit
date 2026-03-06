@@ -1,0 +1,663 @@
+{
+  "project": "GASSIT",
+  "branchName": "ralph/gassit-rental-management",
+  "description": "GASSIT - Web-based rental management platform for Laer Firmengruppe. Full lifecycle: applications, contracts, invoicing, payments (Mollie), dunning, damage, termination. Vue.js + Laravel + MySQL. GDPR-compliant. 7 RBAC roles. Multi-park.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Database schema: users, roles, parks, park_user assignments",
+      "description": "As a developer, I need the core auth and multi-park schema so all other tables can reference it.",
+      "acceptanceCriteria": [
+        "Create users table: id, name, email, password, role (enum: admin|main_manager|rental_manager|park_worker|accountant|office_worker|customer_service), active, timestamps",
+        "Create parks table: id, name, address, city, zip, country, phone, email, bank_account, logo_path, timestamps",
+        "Create park_user pivot table: user_id, park_id (admin/main_manager have implicit access to all parks)",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Database schema: unit types, units, unit statuses",
+      "description": "As a developer, I need the unit and unit-type tables so rental inventory can be managed.",
+      "acceptanceCriteria": [
+        "Create unit_types table: id, park_id, name, description, base_rent, deposit_amount, size_m2, timestamps",
+        "Create units table: id, park_id, unit_type_id, unit_number, floor, building, size_m2, status (enum: free|reserved|rented|maintenance|inactive), timestamps",
+        "Create unit_photos table: id, unit_id, path, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Database schema: customers and blacklist",
+      "description": "As a developer, I need the customer and blacklist tables so tenant profiles can be stored.",
+      "acceptanceCriteria": [
+        "Create customers table: id, type (private|company), first_name, last_name, company_name, dob, address, city, zip, country, email, phone, id_number, tax_id, status (enum: new|tenant|not_renting|debtor|troublemaker|blacklisted), gdpr_consent_at, timestamps, soft deletes",
+        "Create blacklist table: id, customer_id, reason, added_by (user_id), added_at, removed_at, timestamps",
+        "Create customer_documents table: id, customer_id, type, path, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Database schema: applications and waiting list",
+      "description": "As a developer, I need the application and waiting list tables so the intake process can be tracked.",
+      "acceptanceCriteria": [
+        "Create applications table: id, park_id, customer_id, unit_type_id, unit_id (nullable), desired_start_date, status (enum: new|in_progress|waiting|completed), assigned_to (user_id), credit_check_path, notes, timestamps",
+        "Create waiting_list table: id, park_id, customer_id, unit_type_id, priority_score, notified_at, converted_at, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Database schema: contracts",
+      "description": "As a developer, I need the contracts table so rental agreements can be tracked from draft to termination.",
+      "acceptanceCriteria": [
+        "Create contracts table: id, application_id, customer_id, unit_id, start_date, end_date (nullable), rent_amount, deposit_amount, insurance_amount, status (enum: draft|awaiting_signature|signed|active|terminated_by_customer|terminated_by_lfg|declined), signed_pdf_path, signed_at, terminated_at, termination_reason, timestamps",
+        "Create contract_signatures table: id, contract_id, signer_type (customer|lfg), signed_at, ip_address, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Database schema: invoices, invoice items, payments",
+      "description": "As a developer, I need invoice and payment tables so billing and reconciliation can be tracked.",
+      "acceptanceCriteria": [
+        "Create invoices table: id, contract_id, customer_id, park_id, invoice_number, issue_date, due_date, total_amount, status (enum: draft|sent|paid|overdue|cancelled), pdf_path, timestamps",
+        "Create invoice_items table: id, invoice_id, description, quantity, unit_price, total, type (enum: rent|deposit|insurance|electricity|damage|dunning_fee|other)",
+        "Create payments table: id, invoice_id, amount, method, mollie_payment_id, status (enum: pending|paid|failed|refunded), paid_at, timestamps",
+        "Create dunning_levels table: id, invoice_id, level (1|2|3), sent_at, fee_amount, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Database schema: damage reports, electricity meters, tasks",
+      "description": "As a developer, I need damage, metering, and task tables to cover operational workflows.",
+      "acceptanceCriteria": [
+        "Create damage_reports table: id, unit_id, contract_id (nullable), reported_by (user_id), description, estimated_cost, status (enum: reported|in_assessment|repair_ordered|resolved), resolved_at, timestamps",
+        "Create damage_photos table: id, damage_report_id, path, timestamps",
+        "Create electricity_readings table: id, unit_id, reading_date, reading_value, photo_path, recorded_by (user_id), timestamps",
+        "Create tasks table: id, park_id, type (enum: application|damage|ticket|general), title, description, assigned_to (user_id), status (enum: todo|in_progress|done), due_date, priority (enum: low|medium|high), related_id, related_type, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Database schema: mail templates, audit log, reference tables",
+      "description": "As a developer, I need mail template, audit, and reference data tables to complete the schema.",
+      "acceptanceCriteria": [
+        "Create mail_templates table: id, park_id (nullable), name, subject, body_html, type (enum: document|mail), variables_json, timestamps",
+        "Create audit_logs table: id, user_id, action, model_type, model_id, old_values_json, new_values_json, ip_address, timestamps",
+        "Create reference_items table: id, category (country|city|document_type|termination_reason|damage_category|unit_feature), value, label, active, timestamps",
+        "Run migrations without error",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Laravel auth: JWT login, logout, 2FA, password reset",
+      "description": "As any user, I want secure login with optional 2FA so unauthorized access is prevented.",
+      "acceptanceCriteria": [
+        "POST /api/auth/login returns JWT token on valid credentials",
+        "POST /api/auth/logout invalidates token",
+        "POST /api/auth/password-reset sends reset email",
+        "2FA via TOTP: POST /api/auth/2fa/setup and /api/auth/2fa/verify",
+        "Account locked after 5 failed attempts (configurable)",
+        "RBAC middleware applied: role checked on every protected route",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Admin: User & employee CRUD API",
+      "description": "As an Admin, I want to create, edit, and deactivate users so access is controlled.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT/DELETE /api/admin/users (Admin only)",
+        "GET/POST/PUT/DELETE /api/admin/employees (Admin only)",
+        "POST /api/admin/users/{id}/parks assigns parks to user",
+        "All mutations logged to audit_logs",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Park management API (CRUD + settings)",
+      "description": "As a Main Manager, I want to manage park profiles via API so each location is fully configured.",
+      "acceptanceCriteria": [
+        "GET /api/parks (scoped to user's parks), POST /api/parks, PUT /api/parks/{id}, DELETE /api/parks/{id}",
+        "Upload park logo: POST /api/parks/{id}/logo stores to S3-compatible storage",
+        "Park settings: bank account, contact, opening hours stored",
+        "Mutations logged to audit_logs",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Unit management API (CRUD + status transitions)",
+      "description": "As a Rental Manager, I want unit CRUD and status management via API so inventory is always current.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT/DELETE /api/parks/{parkId}/units",
+        "PUT /api/units/{id}/status transitions status with validation (no direct free→rented without contract)",
+        "POST /api/units/{id}/photos uploads photos to storage",
+        "GET /api/units/{id}/history returns rental history",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Customer API (CRUD, GDPR, blacklist)",
+      "description": "As a Rental Manager, I want customer CRUD and GDPR controls via API.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT/DELETE /api/customers (scoped to park)",
+        "POST /api/customers/{id}/gdpr-delete anonymizes PII fields, retains financial records",
+        "POST/DELETE /api/customers/{id}/blacklist manages blacklist entry",
+        "GET /api/customers/{id}/documents lists and downloads attached documents",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Application workflow API (intake, status, credit check)",
+      "description": "As an Office Worker or Rental Manager, I want application CRUD and status transitions via API.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT/DELETE /api/applications (scoped to park)",
+        "PUT /api/applications/{id}/status transitions: new→in_progress→waiting→completed with validation",
+        "POST /api/applications/{id}/credit-check calls Credit Bureau API and stores PDF result",
+        "POST /api/applications/{id}/assign assigns to user",
+        "POST /api/applications/{id}/convert-to-waiting-list moves to waiting list",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Contract API (generate, e-sign, status transitions)",
+      "description": "As a Rental Manager, I want contract generation and e-signature flow via API.",
+      "acceptanceCriteria": [
+        "POST /api/applications/{id}/contract generates draft contract PDF from template",
+        "POST /api/contracts/{id}/send-for-signature sends to e-sign provider, status → awaiting_signature",
+        "Webhook POST /api/webhooks/esign/{contractId} receives signature event, stores signed PDF, status → signed",
+        "PUT /api/contracts/{id}/activate sets status → active, unit status → rented",
+        "PUT /api/contracts/{id}/terminate processes termination with reason and date",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Invoice generation API (auto monthly + manual)",
+      "description": "As an Accountant, I want invoices generated automatically and manually via API.",
+      "acceptanceCriteria": [
+        "POST /api/invoices/generate-monthly triggers generation for all active contracts (queued job)",
+        "POST /api/invoices creates manual invoice with line items",
+        "GET/PUT/DELETE /api/invoices, GET /api/invoices/{id}/pdf",
+        "Invoice number auto-incremented per park per year (e.g. LFG-2026-0001)",
+        "POST /api/invoices/{id}/send emails PDF to customer",
+        "GET /api/invoices/datev-export?from=&to= returns EXTF CSV",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Mollie payment integration (links, webhooks, reconciliation)",
+      "description": "As an Accountant, I want Mollie payment links generated and webhooks processed so payments are reconciled automatically.",
+      "acceptanceCriteria": [
+        "POST /api/invoices/{id}/payment-link creates Mollie payment and returns checkout URL",
+        "POST /api/webhooks/mollie processes payment status events idempotently",
+        "On successful payment: invoice status → paid, payment record created",
+        "On failed payment: retry logic triggered (configurable max retries)",
+        "GET /api/payments lists all payments with filter by park/date/status",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Dunning (Mahnstuffe) automation API",
+      "description": "As an Accountant, I want overdue invoices escalated through dunning levels automatically.",
+      "acceptanceCriteria": [
+        "Scheduled job daily: finds overdue invoices and escalates dunning level per configured delay (Level 1: +7d, Level 2: +14d, Level 3: +30d)",
+        "Each escalation: creates dunning_level record, adds dunning fee to invoice, sends email using dunning mail template",
+        "GET /api/debtors returns all customers with open debt, grouped by dunning level",
+        "POST /api/debtors/{customerId}/pause pauses dunning for customer",
+        "POST /api/debtors/{customerId}/escalate manually escalates to next level",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Damage reports API and electricity metering API",
+      "description": "As a Park Worker, I want to file damage reports and record electricity readings via API.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT /api/damage-reports (scoped to park)",
+        "POST /api/damage-reports/{id}/photos uploads photos to storage",
+        "PUT /api/damage-reports/{id}/status transitions with validation",
+        "POST /api/damage-reports/{id}/invoice generates damage invoice for tenant",
+        "POST /api/units/{id}/electricity-readings records meter reading with photo",
+        "GET /api/units/{id}/electricity-readings returns history with computed consumption and charge",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Task management API (Kanban CRUD)",
+      "description": "As any manager, I want task CRUD with status transitions via API.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT/DELETE /api/tasks (scoped to park, filtered by assigned_to for park_worker role)",
+        "PUT /api/tasks/{id}/status transitions: todo→in_progress→done",
+        "GET /api/tasks/dashboard returns tasks for Kanban widget (own tasks only for non-managers)",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Mail templates API and mass mailing queue",
+      "description": "As an Office Worker, I want to manage mail templates and send mass mailings via API.",
+      "acceptanceCriteria": [
+        "GET/POST/PUT/DELETE /api/mail-templates",
+        "POST /api/mail/send sends individual email from template with variable substitution to a customer",
+        "POST /api/mail/mass-send queues mass mailing with recipient filter (park, status, contract_type)",
+        "POST /api/mail/schedule schedules a mass mailing for future delivery",
+        "GET /api/mail/sent returns sent mail log with delivery status",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Reports API (applications, customers, units, finance)",
+      "description": "As a Main Manager or Accountant, I want report endpoints returning aggregated data for all key modules.",
+      "acceptanceCriteria": [
+        "GET /api/reports/applications?park_id=&from=&to= returns conversion rate, avg processing time",
+        "GET /api/reports/customers?park_id=&from=&to= returns churn, new/active/inactive counts by month",
+        "GET /api/reports/units?park_id= returns occupancy rate, avg rent per m², vacancy duration",
+        "GET /api/reports/finance?park_id=&from=&to= returns revenue vs plan, outstanding debt by payment method",
+        "All endpoints support ?format=xlsx for Excel download",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Dashboard KPI API endpoint",
+      "description": "As a developer, I need a single dashboard endpoint that returns all KPI values for the dashboard widgets.",
+      "acceptanceCriteria": [
+        "GET /api/dashboard/kpis?park_id= returns: new_requests, new_customers, new_invoices, free_units, ongoing_contracts, cancellations, problem_clients, inactive_units, debtors_count, dunning_level_count, damages_count, repair_jobs_count",
+        "GET /api/dashboard/mahnstuffe?park_id= returns debtor table rows with customer, amount, level, days_overdue",
+        "GET /api/dashboard/new-invoices?park_id= returns recent invoices table",
+        "GET /api/dashboard/revenue?park_id= returns planned vs actual revenue per park",
+        "KPIs cached with 30-second TTL",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Vue.js app scaffold: routing, auth store, RBAC guards, layout",
+      "description": "As a developer, I need the Vue.js SPA skeleton with auth, routing, and the main layout before building screens.",
+      "acceptanceCriteria": [
+        "Vue 3 + Vite + Pinia + Vue Router project initialized",
+        "Auth store: login/logout actions, JWT stored in httpOnly cookie or localStorage, user/role state",
+        "Route guards: redirect to /login if unauthenticated; redirect to /403 if role lacks permission",
+        "Main layout: sidebar nav matching menu structure (Dashboard, Workroom, Request, Customer, Units, Park, Finance, Reports, Mail, Settings, Admin), top bar with user info and logout",
+        "Sidebar items hidden/shown per role",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Login page UI",
+      "description": "As any user, I want a login form with email/password and 2FA so I can access the system.",
+      "acceptanceCriteria": [
+        "Login page at /login with email + password fields, submit button",
+        "On success: redirect to /dashboard",
+        "On failure: show error message",
+        "If 2FA required: show TOTP input step after password",
+        "Forgot password link leads to /password-reset with email field",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Dashboard page UI (KPI cards, tables, Kanban, calendar)",
+      "description": "As a manager, I want the dashboard screen showing all KPI widgets from the mockup.",
+      "acceptanceCriteria": [
+        "KPI card grid: Anfragen, Neue Kunden, Neue Factura, Freie Einheiten, Im Gange, Kündigung, Problem Clients, Inaktive Einheiten, Schuldner, Mahnstuffe, Mangel, Schrauber — each with count from /api/dashboard/kpis",
+        "Mahnstuffe table: customer name, amount, dunning level badge, days overdue — data from /api/dashboard/mahnstuffe",
+        "Neue Factura table: invoice number, customer, amount, status badge — from /api/dashboard/new-invoices",
+        "Park revenue table: park name, planned, actual, delta — from /api/dashboard/revenue",
+        "Aufgaben Kanban: 3-column board (Todo/In Progress/Done) from /api/tasks/dashboard",
+        "Calendar widget showing upcoming events (contract start/end dates, task due dates)",
+        "Park selector dropdown filters all widgets",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "Applications list and detail UI",
+      "description": "As an Office Worker, I want to view, create, and manage rental applications from the UI.",
+      "acceptanceCriteria": [
+        "Applications list at /requests/applications: sortable table with status badges, park filter, search by customer name",
+        "Create application modal: customer lookup/create, unit type select, desired start date, notes",
+        "Application detail page: customer info, status stepper (New→In Progress→Waiting→Completed), assigned user, credit check button, document attachments",
+        "Status transition buttons match current status",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "Customer list and profile UI",
+      "description": "As a Rental Manager, I want to view and manage customer profiles from the UI.",
+      "acceptanceCriteria": [
+        "Customer list at /customers: sortable table, status filter, search by name/email",
+        "Customer detail page: personal info, status badge, GDPR consent date, contracts list, invoices list, documents list",
+        "Edit customer info inline or via modal",
+        "Add to blacklist button with reason input (shown when not blacklisted)",
+        "GDPR deletion button (Admin only) with confirmation dialog",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "Units list and unit detail UI",
+      "description": "As a Rental Manager, I want to view and manage units from the UI.",
+      "acceptanceCriteria": [
+        "Units list at /units: card or table view, status filter (free/reserved/rented/maintenance/inactive), park filter",
+        "Unit detail page: info, status badge, photos gallery, current contract link, rental history table",
+        "Edit unit info form",
+        "Status change dropdown with confirmation",
+        "Electricity readings tab: list readings, add new reading with photo upload",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "Contracts UI (generation, e-sign flow, termination)",
+      "description": "As a Rental Manager, I want to generate, sign, and terminate contracts from the UI.",
+      "acceptanceCriteria": [
+        "Contract detail accessible from Application detail and Customer profile",
+        "Generate contract button: calls API, shows PDF preview, status changes to Draft",
+        "Send for signature button: status → Awaiting Signature, sends email",
+        "Contract status stepper clearly shows current state",
+        "Terminate contract button: reason dropdown + end date picker + confirmation dialog",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "Finance: Invoices list and invoice detail UI",
+      "description": "As an Accountant, I want to manage invoices and generate payment links from the UI.",
+      "acceptanceCriteria": [
+        "Invoices list at /finance/payments: table with status badges, date range filter, park filter, Excel export button",
+        "Invoice detail: line items table, total, status, payment history, download PDF button",
+        "Generate payment link button: shows Mollie link in modal for copying/sending",
+        "Manual invoice creation form: customer select, line items (add/remove rows), due date",
+        "DATEV export button with date range picker",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "Finance: Debtors list UI with dunning actions",
+      "description": "As an Accountant, I want to see all debtors and take dunning actions from the UI.",
+      "acceptanceCriteria": [
+        "Debtors list at /finance/debtors: table with customer, total owed, dunning level badge, days overdue, last action",
+        "Pause dunning button per row with confirmation",
+        "Manual escalate button per row with confirmation",
+        "Dunning level filter (All / Level 1 / Level 2 / Level 3)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-033",
+      "title": "Damage reports list and detail UI",
+      "description": "As a Park Worker or Rental Manager, I want to file and track damage reports from the UI.",
+      "acceptanceCriteria": [
+        "Damage list at /units/damage: table with status badges, park filter, unit filter",
+        "Create damage report form: unit select, description, estimated cost, photo upload",
+        "Damage detail: photos gallery, status stepper, repair assignment, link to damage invoice",
+        "Generate damage invoice button from detail page",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-034",
+      "title": "Task board UI (Kanban full page)",
+      "description": "As any manager, I want a full Kanban board at /workroom/tasks to manage all tasks.",
+      "acceptanceCriteria": [
+        "Three columns: Todo, In Progress, Done",
+        "Task cards show: title, type badge, assignee avatar, due date, priority indicator",
+        "Drag-and-drop between columns updates status via API",
+        "Create task button opens modal: title, type, assignee, due date, priority, park",
+        "Filter bar: by assignee, type, priority",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-035",
+      "title": "Park management UI (park profile, unit types, plans, discounts)",
+      "description": "As a Main Manager, I want to configure parks and their settings from the UI.",
+      "acceptanceCriteria": [
+        "Park profile page at /park/location: edit form for name, address, contact, bank account, logo upload",
+        "Unit types page at /park/types: list + create/edit form with name, base rent, deposit, size, insurance options",
+        "Plans/floor plans page at /park/plans: upload PDF per unit type",
+        "Discounts page at /park/discounts: create time-based discount rules (months, percent)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-036",
+      "title": "Mail: Templates management and mass mailing UI",
+      "description": "As an Office Worker, I want to manage mail templates and send mass mailings from the UI.",
+      "acceptanceCriteria": [
+        "Mail templates list at /settings/mail-templates: table with name, type, edit/preview actions",
+        "Template editor: subject field, WYSIWYG body editor with variable placeholder helper",
+        "Mass mailing page at /mail: recipient filter (park, customer status, contract type), template select, send or schedule",
+        "Sent mail log at /mail/sent: table with recipient, subject, sent_at, delivery status",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "Settings: Document templates and UI customization",
+      "description": "As an Admin, I want to manage document templates and branding settings from the UI.",
+      "acceptanceCriteria": [
+        "Document templates at /settings/document-templates: list with type (contract/invoice/dunning/termination), upload/edit template",
+        "UI customization at /settings/dashboard: upload company logo, set primary color, configure default language",
+        "Per-park template overrides: select park then upload overriding template",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "Admin panel: Users, employees, reference data UI",
+      "description": "As an Admin, I want to manage users, employees, and reference data from the UI.",
+      "acceptanceCriteria": [
+        "Users list at /admin/users: table with role badge, active status toggle, park assignments",
+        "Create/edit user form: name, email, role select, park multi-select, active toggle",
+        "Employees list at /admin/employees: table with role, park, contact",
+        "Reference data page: tabbed by category (countries, document types, termination reasons, damage categories), inline add/edit/deactivate",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "Reports UI (applications, customers, units, finance tabs)",
+      "description": "As a Main Manager or Accountant, I want all reports accessible from the Reports section of the UI.",
+      "acceptanceCriteria": [
+        "Reports page at /reports: tab navigation (Applications / Customers / Units / Finance)",
+        "Each tab has date range picker and park filter",
+        "Applications tab: conversion rate metric, avg processing time, bar chart by status",
+        "Customers tab: line chart new/active/inactive by month, churn rate metric",
+        "Units tab: occupancy rate donut chart, table of units sorted by vacancy duration",
+        "Finance tab: revenue vs plan bar chart, outstanding debt table, payments by method pie chart",
+        "Excel export button on each tab",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "Workroom quick-create menu and global search",
+      "description": "As any manager, I want the Workroom quick-action menu and a global search bar to quickly create items and find records.",
+      "acceptanceCriteria": [
+        "Workroom button in sidebar opens dropdown: New Application, New Damage Report, New Ticket, New Invoice, New Task",
+        "Each option opens the relevant creation modal/page pre-filled with current park context",
+        "Global search bar in top nav: searches customers, units, applications, contracts by keyword",
+        "Search results dropdown shows top 5 matches per category with quick-links",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
