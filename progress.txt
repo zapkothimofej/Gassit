@@ -202,3 +202,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `createToken('temp-2fa')` naming allows distinguishing temp from full tokens in TwoFactorController
   - Google2FA::getCurrentOtp() in tests generates current valid TOTP code
 ---
+
+## 2026-03-07 - US-016
+- Created RoleMiddleware: checks role against allowed list, returns 403 if unauthorized
+- Created ParkScopeMiddleware: checks park access (admin/main_manager bypass), static hasAccessToPark() helper
+- Registered as named middleware in bootstrap/app.php: 'role' and 'park.scope'
+- Created ParkFactory for test support
+- Added HasFactory to Park model
+- All 8 middleware unit tests pass
+- **Learnings for future iterations:**
+  - Laravel 12 uses bootstrap/app.php $middleware->alias() instead of Kernel.php for named middleware
+  - ParkFactory needed for any test involving parks; add to test suite early
+  - HasFactory must be on model for Factory to work
+---
