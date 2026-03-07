@@ -93,3 +93,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - dunning_records.level uses unsignedTinyInteger (no enum — int 1-3 per spec)
   - payments.currency default 'EUR' as string(3)
 ---
+
+## 2026-03-07 - US-007
+- Created invoices migration (contract_id nullable FK, customer_id/park_id FKs, status enum, soft deletes)
+- Created invoice_items migration (invoice_id FK, item_type enum, quantity/unit_price/total decimals)
+- Created payments migration (invoice_id FK, payment_method enum, status enum, mollie fields)
+- Created dunning_records migration (invoice_id/customer_id FKs, level tinyint, fee_amount decimal)
+- Created models: Invoice (SoftDeletes), InvoiceItem, Payment, DunningRecord with relationships
+- All 4 migrations ran successfully
+- **Learnings for future iterations:**
+  - nullable FK with nullOnDelete: `foreignId('contract_id')->nullable()->constrained()->nullOnDelete()` works
+  - `unsignedTinyInteger('level')` for small integer range (1-3 dunning levels)
+  - DunningRecord has both invoice_id and customer_id FKs (redundant but useful for direct queries)
+---
