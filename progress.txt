@@ -173,3 +173,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - reference_items.category enum includes all 7 categories; contracts.termination_reason_id can now use a proper FK if needed
   - reference_items seeded directly in migration (small, stable lookup data)
 ---
+
+## 2026-03-07 - US-014
+- Added login_attempts column to users via migration
+- Updated User model with HasApiTokens trait
+- Created AuthController with login, logout, refresh, forgot-password, reset-password
+- Created routes/api.php with auth routes (login/forgot-password/reset-password public; logout/refresh protected)
+- Registered api routes in bootstrap/app.php
+- Added ResetPassword::createUrlUsing() to point to frontend URL (avoids 'password.reset' route requirement)
+- Updated phpunit.xml to use MySQL (gassit_test DB) since pdo_sqlite not installed
+- All 8 auth tests pass
+- **Learnings for future iterations:**
+  - PHP install lacks pdo_sqlite — always use MySQL for tests (gassit_test DB)
+  - `RefreshDatabase` with MySQL uses transactions (not re-migration), so migration seeds persist; use `updateOrCreate` not `create` for seeded data in tests
+  - `ResetPassword::createUrlUsing()` needed for API-only apps (no web routes for password.reset)
+  - login_max_attempts from system_settings: use `ort 5` as default if not found
+---
