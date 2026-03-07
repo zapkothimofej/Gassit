@@ -106,3 +106,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `unsignedTinyInteger('level')` for small integer range (1-3 dunning levels)
   - DunningRecord has both invoice_id and customer_id FKs (redundant but useful for direct queries)
 ---
+
+## 2026-03-07 - US-008
+- Created vendors migration (park_id nullable FK, soft deletes)
+- Created damage_reports migration (unit_id/contract_id/reported_by/assigned_vendor_id FKs, status enum, soft deletes)
+- Created damage_photos migration (damage_report_id FK, taken_at nullable)
+- Created vendor_invoices migration (vendor_id/damage_report_id FKs, paid_at nullable)
+- Created models: Vendor (SoftDeletes), DamageReport (SoftDeletes), DamagePhoto, VendorInvoice with relationships
+- All 4 migrations ran successfully
+- **Learnings for future iterations:**
+  - vendors table must be created before damage_reports (FK dependency: assigned_vendor_id)
+  - `reported_by` FK uses `->constrained('users')` since column name differs from table
+  - `assigned_vendor_id` FK uses `->constrained('vendors')->nullOnDelete()` for nullable assignment
+---
