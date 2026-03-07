@@ -10,7 +10,7 @@
       "acceptanceCriteria": [
         "Create users table: id, name, email, password, role (enum: admin|main_manager|rental_manager|park_worker|accountant|office_worker|customer_service), active (bool, default true), remember_token, timestamps",
         "Create parks table: id, name, address, city, zip, country, phone, email, bank_iban, bank_bic, bank_owner, logo_path, primary_color (hex), language (default 'de'), timestamps, soft deletes",
-        "Create park_user pivot table: user_id, park_id, unique(user_id, park_id) — admin/main_manager access all parks implicitly",
+        "Create park_user pivot table: user_id, park_id, unique(user_id, park_id) \u00e2\u20ac\u201d admin/main_manager access all parks implicitly",
         "Create password_reset_tokens table: email, token, created_at",
         "Create personal_access_tokens table for Laravel Sanctum",
         "Run all migrations without error",
@@ -117,7 +117,7 @@
       "acceptanceCriteria": [
         "Create damage_reports table: id, unit_id, contract_id (nullable), reported_by (user_id), description, estimated_cost (decimal nullable), actual_cost (decimal nullable), status (enum: reported|in_assessment|repair_ordered|in_repair|resolved|closed), assigned_vendor_id (nullable), resolved_at (nullable), timestamps, soft deletes",
         "Create damage_photos table: id, damage_report_id, path, caption, taken_at (nullable), timestamps",
-        "Create vendors table: id, park_id (nullable — null means all parks), name, contact_name, phone, email, specialty (string), hourly_rate (decimal nullable), active (bool), timestamps, soft deletes",
+        "Create vendors table: id, park_id (nullable \u00e2\u20ac\u201d null means all parks), name, contact_name, phone, email, specialty (string), hourly_rate (decimal nullable), active (bool), timestamps, soft deletes",
         "Create vendor_invoices table: id, vendor_id, damage_report_id (nullable), amount, paid_at (nullable), pdf_path (nullable), timestamps",
         "Run migrations without error",
         "Typecheck passes"
@@ -193,7 +193,7 @@
       "title": "DB schema: reference items, employees",
       "description": "As a developer, I need reference/lookup tables and employee records for consistent data across the system.",
       "acceptanceCriteria": [
-        "Create reference_items table: id, category (enum: country|city|document_type|termination_reason|damage_category|unit_feature|industry_sector), value, label, sort_order, active, timestamps — seed common German states/cities and standard termination reasons",
+        "Create reference_items table: id, category (enum: country|city|document_type|termination_reason|damage_category|unit_feature|industry_sector), value, label, sort_order, active, timestamps \u00e2\u20ac\u201d seed common German states/cities and standard termination reasons",
         "Create employees table: id, user_id (nullable FK), park_id (nullable), first_name, last_name, email, phone, role_title, hire_date, active, timestamps, soft deletes",
         "Run migrations without error",
         "Typecheck passes"
@@ -270,7 +270,7 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -314,7 +314,7 @@
       "acceptanceCriteria": [
         "GET /api/parks/{parkId}/units: paginated, filter by status/unit_type",
         "POST /api/parks/{parkId}/units, PUT /api/units/{id}, DELETE /api/units/{id} (soft delete)",
-        "PUT /api/units/{id}/status: validates transitions (free→reserved→rented requires contract; rented→free requires terminated contract)",
+        "PUT /api/units/{id}/status: validates transitions (free\u00e2\u2020\u2019reserved\u00e2\u2020\u2019rented requires contract; rented\u00e2\u2020\u2019free requires terminated contract)",
         "POST /api/units/{id}/photos: multipart, store to S3, returns photo record",
         "DELETE /api/units/{id}/photos/{photoId}",
         "GET /api/units/{id}/history: list of past contracts with customer name, dates, rent",
@@ -369,11 +369,11 @@
       "acceptanceCriteria": [
         "GET /api/applications: paginated, filter by park/status/assigned_to, search by customer",
         "POST /api/applications, PUT /api/applications/{id}, DELETE /api/applications/{id}",
-        "PUT /api/applications/{id}/status: validate transition new→in_progress→waiting→completed|declined",
+        "PUT /api/applications/{id}/status: validate transition new\u00e2\u2020\u2019in_progress\u00e2\u2020\u2019waiting\u00e2\u2020\u2019completed|declined",
         "POST /api/applications/{id}/assign: set assigned_to user",
         "POST /api/applications/{id}/credit-check: call Credit Bureau stub/adapter, store PDF result, return check summary",
-        "POST /api/applications/{id}/waiting-list: move to waiting list (status→waiting, create waiting_list record)",
-        "POST /api/applications/{id}/convert: assign unit, prepare contract draft, status→completed",
+        "POST /api/applications/{id}/waiting-list: move to waiting list (status\u00e2\u2020\u2019waiting, create waiting_list record)",
+        "POST /api/applications/{id}/convert: assign unit, prepare contract draft, status\u00e2\u2020\u2019completed",
         "Auto-send acknowledgment email on application creation using welcome mail template",
         "Tests pass",
         "Typecheck passes"
@@ -407,11 +407,11 @@
         "POST /api/applications/{id}/contract: generate PDF from document template, create contract record in draft status",
         "GET /api/contracts: paginated, filter by status/park/customer",
         "GET /api/contracts/{id}, PUT /api/contracts/{id}",
-        "POST /api/contracts/{id}/send-for-signature: call e-sign provider adapter (DocuSign/HelloSign stub), update status→awaiting_signature",
-        "POST /api/webhooks/esign: receive signature webhook, store signed PDF, update status→signed, create contract_signature record",
-        "POST /api/contracts/{id}/activate: status→active, unit status→rented, create deposit record",
-        "POST /api/contracts/{id}/terminate: validate termination date >= notice period, status→terminated_by_customer or terminated_by_lfg, queue final invoice generation",
-        "POST /api/contracts/{id}/renew: create new contract linked via contract_renewals, old contract status→expired",
+        "POST /api/contracts/{id}/send-for-signature: call e-sign provider adapter (DocuSign/HelloSign stub), update status\u00e2\u2020\u2019awaiting_signature",
+        "POST /api/webhooks/esign: receive signature webhook, store signed PDF, update status\u00e2\u2020\u2019signed, create contract_signature record",
+        "POST /api/contracts/{id}/activate: status\u00e2\u2020\u2019active, unit status\u00e2\u2020\u2019rented, create deposit record",
+        "POST /api/contracts/{id}/terminate: validate termination date >= notice period, status\u00e2\u2020\u2019terminated_by_customer or terminated_by_lfg, queue final invoice generation",
+        "POST /api/contracts/{id}/renew: create new contract linked via contract_renewals, old contract status\u00e2\u2020\u2019expired",
         "Tests pass",
         "Typecheck passes"
       ],
@@ -426,7 +426,7 @@
       "acceptanceCriteria": [
         "GET /api/contracts/{id}/deposit: get deposit record",
         "PUT /api/deposits/{id}/received: mark deposit as received with received_at date",
-        "POST /api/deposits/{id}/return: calculate return amount (deposit minus deductions), set return_amount, deduction_amount, deduction_reason, status→returned|partially_returned",
+        "POST /api/deposits/{id}/return: calculate return amount (deposit minus deductions), set return_amount, deduction_amount, deduction_reason, status\u00e2\u2020\u2019returned|partially_returned",
         "POST /api/deposits/{id}/mollie-payout: create Mollie payment to customer IBAN for return amount",
         "GET /api/deposits: paginated list filter by park/status",
         "Deposit status transitions validated (can only return if contract terminated)",
@@ -462,11 +462,11 @@
       "description": "As an Accountant, I want invoice generation endpoints with DATEV export support.",
       "acceptanceCriteria": [
         "POST /api/invoices: create manual invoice with customer, contract (optional), line items, due_date",
-        "POST /api/invoices/generate-monthly: queued job — for all active contracts generates rent invoice with applicable discounts and electricity charges, fires on configured invoice_day each month",
+        "POST /api/invoices/generate-monthly: queued job \u00e2\u20ac\u201d for all active contracts generates rent invoice with applicable discounts and electricity charges, fires on configured invoice_day each month",
         "GET /api/invoices: paginated, filter by park/status/customer/date range",
         "GET /api/invoices/{id}/pdf: stream signed PDF",
         "POST /api/invoices/{id}/send: email PDF to customer using invoice mail template",
-        "POST /api/invoices/{id}/cancel: status→cancelled, create credit note line",
+        "POST /api/invoices/{id}/cancel: status\u00e2\u2020\u2019cancelled, create credit note line",
         "GET /api/invoices/datev-export?park_id=&from=&to=: return EXTF CSV format for DATEV import",
         "Invoice number format: {PARK_CODE}-{YEAR}-{SEQ} auto-incremented per park per year",
         "Tests pass",
@@ -481,8 +481,8 @@
       "title": "Mollie payment API (payment links, webhooks, refunds, retries)",
       "description": "As an Accountant, I want Mollie integrated for payment collection and reconciliation.",
       "acceptanceCriteria": [
-        "POST /api/invoices/{id}/payment-link: create Mollie payment, return checkout URL, set payment record status→pending",
-        "POST /api/webhooks/mollie: verify webhook signature, update payment status (paid→invoice paid, failed→trigger retry logic)",
+        "POST /api/invoices/{id}/payment-link: create Mollie payment, return checkout URL, set payment record status\u00e2\u2020\u2019pending",
+        "POST /api/webhooks/mollie: verify webhook signature, update payment status (paid\u00e2\u2020\u2019invoice paid, failed\u00e2\u2020\u2019trigger retry logic)",
         "Retry logic: on payment failure, queue retry after 24h up to system_settings.payment_retry_max attempts",
         "POST /api/payments/{id}/refund: initiate Mollie refund for a payment",
         "GET /api/payments: paginated list filter by park/status/method/date",
@@ -500,7 +500,7 @@
       "description": "As an Accountant, I want automated dunning escalation with manual override endpoints.",
       "acceptanceCriteria": [
         "Laravel scheduled command runs daily: finds overdue invoices, escalates dunning level based on system_settings delays",
-        "On each escalation: create dunning_records entry, add dunning fee invoice item, send email via dunning mail template for that level, update customer status→debtor",
+        "On each escalation: create dunning_records entry, add dunning fee invoice item, send email via dunning mail template for that level, update customer status\u00e2\u2020\u2019debtor",
         "GET /api/debtors?park_id=: list all customers with overdue invoices, total owed, current dunning level, days overdue",
         "POST /api/debtors/{customerId}/pause: set flag preventing auto-escalation for 30 days",
         "POST /api/debtors/{customerId}/escalate: manually jump to next dunning level immediately",
@@ -520,7 +520,7 @@
         "GET /api/damage-reports: paginated, filter by park/status/unit",
         "POST /api/damage-reports, PUT /api/damage-reports/{id}, DELETE /api/damage-reports/{id}",
         "POST /api/damage-reports/{id}/photos: upload to S3",
-        "PUT /api/damage-reports/{id}/status: validate transitions reported→in_assessment→repair_ordered→in_repair→resolved→closed",
+        "PUT /api/damage-reports/{id}/status: validate transitions reported\u00e2\u2020\u2019in_assessment\u00e2\u2020\u2019repair_ordered\u00e2\u2020\u2019in_repair\u00e2\u2020\u2019resolved\u00e2\u2020\u2019closed",
         "POST /api/damage-reports/{id}/assign-vendor: set assigned_vendor_id, notify vendor by email",
         "POST /api/damage-reports/{id}/invoice: generate damage invoice for the tenant's contract",
         "Tests pass",
@@ -538,7 +538,7 @@
         "GET/POST/PUT/DELETE /api/units/{unitId}/meters",
         "POST /api/meters/{id}/readings: record reading with date, value, optional photo upload",
         "GET /api/meters/{id}/readings: list readings with computed consumption (current - previous value)",
-        "POST /api/meters/{id}/readings/{readingId}/bill: compute charge (consumption × price_per_kwh from pricing table), create invoice item on next open invoice or new invoice",
+        "POST /api/meters/{id}/readings/{readingId}/bill: compute charge (consumption \u00c3\u2014 price_per_kwh from pricing table), create invoice item on next open invoice or new invoice",
         "GET /api/parks/{parkId}/electricity-pricing: list pricing periods",
         "POST /api/parks/{parkId}/electricity-pricing: create new pricing period (valid_from today, close previous)",
         "Tests pass",
@@ -571,7 +571,7 @@
       "acceptanceCriteria": [
         "GET /api/tasks: paginated, filter by park/status/assigned_to/type/priority",
         "POST /api/tasks, PUT /api/tasks/{id}, DELETE /api/tasks/{id}",
-        "PUT /api/tasks/{id}/status: todo→in_progress→done (set completed_at on done)",
+        "PUT /api/tasks/{id}/status: todo\u00e2\u2020\u2019in_progress\u00e2\u2020\u2019done (set completed_at on done)",
         "POST /api/tasks/{id}/assign: change assigned_to, send in-app notification to new assignee",
         "GET /api/tasks/dashboard: returns tasks for Kanban widget (park_worker only sees own tasks)",
         "GET /api/tasks/calendar: returns tasks with due_date for calendar widget",
@@ -656,7 +656,7 @@
       "title": "Dashboard KPI and reports API",
       "description": "As a developer, I need dashboard and report endpoints with caching so managers get real-time insights.",
       "acceptanceCriteria": [
-        "GET /api/dashboard/kpis?park_id=: returns new_requests, new_customers, new_invoices_count, free_units, ongoing_contracts, cancellations, problem_clients, inactive_units, debtors_count, max_dunning_level, damages_open, repair_jobs_open — cached 30s",
+        "GET /api/dashboard/kpis?park_id=: returns new_requests, new_customers, new_invoices_count, free_units, ongoing_contracts, cancellations, problem_clients, inactive_units, debtors_count, max_dunning_level, damages_open, repair_jobs_open \u00e2\u20ac\u201d cached 30s",
         "GET /api/dashboard/mahnstuffe?park_id=: debtor rows with customer name, total_owed, dunning_level, days_overdue",
         "GET /api/dashboard/revenue?park_id=: per-park planned vs actual for current month",
         "GET /api/reports/applications?park_id=&from=&to=&format=json|xlsx",
@@ -708,7 +708,7 @@
       "description": "As a developer, I need the frontend skeleton with routing, state management, API client, and layout before building screens.",
       "acceptanceCriteria": [
         "Vue 3 + Vite + TypeScript + Pinia + Vue Router 4 project initialized in /frontend",
-        "Axios instance configured with base URL from env, auto-attach Bearer token from auth store, 401→logout redirect",
+        "Axios instance configured with base URL from env, auto-attach Bearer token from auth store, 401\u00e2\u2020\u2019logout redirect",
         "Auth Pinia store: login(email, password), logout(), user state, role getter, parks getter, token persisted in localStorage",
         "Route meta field 'roles' for RBAC guard: beforeEach checks auth and role, redirects to /login or /403",
         "AppLayout.vue: sidebar nav + top bar wrapper component",
@@ -762,12 +762,12 @@
       "title": "Dashboard page UI (KPI cards, Mahnstuffe table, invoices table, revenue table, Kanban, calendar)",
       "description": "As a manager, I want the dashboard screen showing all KPIs and widgets per the FSD mockup.",
       "acceptanceCriteria": [
-        "12 KPI cards in responsive grid: Anfragen, Neue Kunden, Neue Factura, Freie Einheiten, Im Gange, Kündigung, Problem Clients, Inaktive Einheiten, Schuldner, Mahnstuffe, Mangel, Schrauber — each with count and link to relevant module",
-        "Mahnstuffe table: customer name, owed amount, dunning level badge, days overdue, row click → customer profile",
-        "Neue Factura table: invoice number, customer, amount, status badge, row click → invoice detail",
+        "12 KPI cards in responsive grid: Anfragen, Neue Kunden, Neue Factura, Freie Einheiten, Im Gange, K\u00c3\u00bcndigung, Problem Clients, Inaktive Einheiten, Schuldner, Mahnstuffe, Mangel, Schrauber \u00e2\u20ac\u201d each with count and link to relevant module",
+        "Mahnstuffe table: customer name, owed amount, dunning level badge, days overdue, row click \u00e2\u2020\u2019 customer profile",
+        "Neue Factura table: invoice number, customer, amount, status badge, row click \u00e2\u2020\u2019 invoice detail",
         "Park revenue table: park name, target, actual, delta (red/green), data from /api/dashboard/revenue",
         "Aufgaben mini-Kanban: 3 columns, task cards with title + priority badge, limited to 5 per column with 'show more' link",
-        "Calendar widget: events for next 14 days (contract start/end, task due dates), click → entity",
+        "Calendar widget: events for next 14 days (contract start/end, task due dates), click \u00e2\u2020\u2019 entity",
         "Park selector in top bar filters all widgets",
         "All data fetched on mount, loading skeletons shown during fetch",
         "Typecheck passes",
@@ -787,7 +787,7 @@
         "Search bar: by customer name/email",
         "Create Application button opens CreateApplicationModal",
         "CreateApplicationModal: customer search-select (live search /api/customers), unit type select, desired start date, notes, source select",
-        "Row click → /requests/applications/{id}",
+        "Row click \u00e2\u2020\u2019 /requests/applications/{id}",
         "Pagination with AppPagination component",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
@@ -801,7 +801,7 @@
       "title": "Application detail page UI",
       "description": "As a Rental Manager, I want a full application detail view with all actions available.",
       "acceptanceCriteria": [
-        "/requests/applications/{id}: header with application ID and status stepper (New→In Progress→Waiting→Completed)",
+        "/requests/applications/{id}: header with application ID and status stepper (New\u00e2\u2020\u2019In Progress\u00e2\u2020\u2019Waiting\u00e2\u2020\u2019Completed)",
         "Customer info card: name, contact, link to customer profile",
         "Unit request card: type, desired start date, notes",
         "Actions sidebar: Assign (user search), Change Status (buttons per valid next step), Run Credit Check, Move to Waiting List, Convert to Contract",
@@ -842,7 +842,7 @@
         "Filters: park, status, customer type (private/company)",
         "Search: by name, email, ID number",
         "Create Customer button opens CreateCustomerModal: type toggle (private/company), fields adapt per type, GDPR consent checkbox required",
-        "Row click → /customers/{id}",
+        "Row click \u00e2\u2020\u2019 /customers/{id}",
         "Bulk export button: download filtered list as Excel",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
@@ -858,8 +858,8 @@
       "acceptanceCriteria": [
         "/customers/{id}: header with customer name, type badge, status badge",
         "Personal info section: all fields editable inline, save button, GDPR consent timestamp shown",
-        "Contracts tab: list of all contracts with status, unit, dates, rent — row click → contract detail",
-        "Invoices tab: list of invoices with status badge, amount, due date — row click → invoice detail",
+        "Contracts tab: list of all contracts with status, unit, dates, rent \u00e2\u20ac\u201d row click \u00e2\u2020\u2019 contract detail",
+        "Invoices tab: list of invoices with status badge, amount, due date \u00e2\u20ac\u201d row click \u00e2\u2020\u2019 invoice detail",
         "Applications tab: list of applications with status",
         "Documents tab: list uploaded docs with download, delete; upload button",
         "Activity tab: audit log events for this customer",
@@ -880,7 +880,7 @@
         "Filter: active only toggle",
         "Remove from blacklist button per active row: confirmation dialog with reason",
         "Add to blacklist button: customer search + reason text",
-        "Row click → customer profile",
+        "Row click \u00e2\u2020\u2019 customer profile",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
@@ -933,7 +933,7 @@
         "/contracts: AppTable with columns: Contract ID, Customer, Unit, Park, Start Date, End Date, Rent, Status (badge), Actions",
         "Filters: park, status, date range (start_date)",
         "Search: by customer name or contract number",
-        "Row click → contract detail",
+        "Row click \u00e2\u2020\u2019 contract detail",
         "Export to Excel button",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
@@ -947,7 +947,7 @@
       "title": "Contract detail page UI (full lifecycle actions)",
       "description": "As a Rental Manager, I want a contract detail view with all lifecycle action buttons.",
       "acceptanceCriteria": [
-        "/contracts/{id}: header with contract number and status stepper (Draft→Awaiting Signature→Signed→Active→Terminated/Declined)",
+        "/contracts/{id}: header with contract number and status stepper (Draft\u00e2\u2020\u2019Awaiting Signature\u00e2\u2020\u2019Signed\u00e2\u2020\u2019Active\u00e2\u2020\u2019Terminated/Declined)",
         "Contract info card: customer, unit, dates, amounts (rent, deposit, insurance)",
         "Generate PDF button (in Draft): calls API, opens PDF in new tab",
         "Send for Signature button (Draft/Signed): calls API, shows success toast",
@@ -1010,7 +1010,7 @@
         "Pause Dunning button per row: confirmation dialog, shows 'Paused' badge",
         "Escalate button per row: confirmation dialog showing next level and fee",
         "Resolve button per row: marks as resolved after confirmation",
-        "Row click → customer profile",
+        "Row click \u00e2\u2020\u2019 customer profile",
         "Summary metrics at top: total debtors, total owed, breakdown by dunning level",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
@@ -1060,7 +1060,7 @@
       "description": "As any manager, I want a full-page Kanban board for task management.",
       "acceptanceCriteria": [
         "/workroom/tasks: three columns (Todo, In Progress, Done) using Vue-draggable or @vueuse/gesture",
-        "Drag card between columns → PATCH /api/tasks/{id}/status",
+        "Drag card between columns \u00e2\u2020\u2019 PATCH /api/tasks/{id}/status",
         "Task card: title, type badge, priority badge (color-coded), assignee avatar/initials, due date (red if overdue)",
         "Create Task button: opens modal with title, type, description, assigned_to search, due date, priority, park",
         "Filter bar: assigned_to filter (park_worker sees only self), type filter, priority filter",
@@ -1130,7 +1130,7 @@
         "/park/electricity: pricing history table with valid_from, valid_to, price_per_kwh; add new pricing period button",
         "Add pricing modal: price input, valid_from date (auto-closes previous period)",
         "Units electricity overview: table of all units in park with their meters and latest reading",
-        "Click unit row → /units/{id} electricity tab",
+        "Click unit row \u00e2\u2020\u2019 /units/{id} electricity tab",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
@@ -1231,7 +1231,7 @@
       "description": "As an Admin, I want to manage all user accounts and employee records from the admin panel.",
       "acceptanceCriteria": [
         "/admin/users: table with name, email, role badge, parks count, active toggle, last login, edit/deactivate actions",
-        "Create User modal: name, email, role select, park multi-select, active toggle — auto-sends welcome email",
+        "Create User modal: name, email, role select, park multi-select, active toggle \u00e2\u20ac\u201d auto-sends welcome email",
         "Edit User modal: same fields, reset password button",
         "Deactivate: toggle active, confirmation dialog",
         "/admin/employees: table with name, role_title, park, contact, active status",
@@ -1267,7 +1267,7 @@
       "acceptanceCriteria": [
         "/profile: personal info (read-only name/email), change password form (current + new + confirm)",
         "2FA section: show current status (enabled/disabled)",
-        "Enable 2FA: button → POST /api/auth/2fa/setup, show QR code + secret, ask to verify first code to confirm",
+        "Enable 2FA: button \u00e2\u2020\u2019 POST /api/auth/2fa/setup, show QR code + secret, ask to verify first code to confirm",
         "Disable 2FA: button with password confirmation dialog",
         "Notification preferences: toggle for in-app notifications per event type",
         "Typecheck passes",
@@ -1287,7 +1287,7 @@
         "Mark all read button in dropdown",
         "/notifications: full list page with all notifications, pagination, filter by read/unread",
         "Notification types: task assigned, invoice overdue, application assigned, waiting list unit available, dunning escalated",
-        "Click notification → navigate to related entity and mark as read",
+        "Click notification \u00e2\u2020\u2019 navigate to related entity and mark as read",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
@@ -1300,9 +1300,9 @@
       "title": "Global search UI",
       "description": "As any user, I want a global search bar in the top nav to quickly find any record.",
       "acceptanceCriteria": [
-        "Search input in top bar: Cmd/Ctrl+K opens focus, placeholder 'Kunden, Einheiten, Verträge suchen...'",
-        "Typing ≥2 chars: calls /api/search?q= and shows results dropdown",
-        "Results grouped by category: Customers, Units, Applications, Contracts, Invoices — each with icon and top 3 matches",
+        "Search input in top bar: Cmd/Ctrl+K opens focus, placeholder 'Kunden, Einheiten, Vertr\u00c3\u00a4ge suchen...'",
+        "Typing \u00e2\u2030\u00a52 chars: calls /api/search?q= and shows results dropdown",
+        "Results grouped by category: Customers, Units, Applications, Contracts, Invoices \u00e2\u20ac\u201d each with icon and top 3 matches",
         "Click result: navigate to entity detail page",
         "No results state: 'Keine Ergebnisse gefunden'",
         "Loading spinner during API call",
@@ -1351,7 +1351,7 @@
       "title": "Reports UI: Units and Finance tabs",
       "description": "As a Main Manager or Accountant, I want unit occupancy and financial reports with charts.",
       "acceptanceCriteria": [
-        "Units tab: park filter; occupancy rate donut chart (rented/total); avg rent per m² metric; table of units sorted by vacancy duration desc; top damaged units list",
+        "Units tab: park filter; occupancy rate donut chart (rented/total); avg rent per m\u00c2\u00b2 metric; table of units sorted by vacancy duration desc; top damaged units list",
         "Finance tab: date range + park filter; revenue vs plan bar chart per month; outstanding debt total metric; payments by method pie chart; top debtors table",
         "Finance tab: DATEV export button with date range modal",
         "Typecheck passes",
@@ -1383,7 +1383,7 @@
       "title": "Application reports list page and waiting list reports",
       "description": "As a Main Manager, I want dedicated reports pages under the Request module.",
       "acceptanceCriteria": [
-        "/requests/reports: metrics for current park — total applications, by status breakdown, conversion rate, avg time from new to completed",
+        "/requests/reports: metrics for current park \u00e2\u20ac\u201d total applications, by status breakdown, conversion rate, avg time from new to completed",
         "Filter by date range",
         "Export to Excel",
         "Waiting list summary: total entries, entries by unit type, avg wait duration",
@@ -1449,7 +1449,7 @@
     {
       "id": "US-084",
       "title": "Mobile responsive adjustments",
-      "description": "As a user on a tablet, I want the UI to be usable on screens ≥768px so managers can use it on-site.",
+      "description": "As a user on a tablet, I want the UI to be usable on screens \u00e2\u2030\u00a5768px so managers can use it on-site.",
       "acceptanceCriteria": [
         "Sidebar collapses to icon-only mode on screens <1024px, toggleable with hamburger button",
         "All AppTable components scroll horizontally on small screens (overflow-x: auto wrapper)",
@@ -1471,10 +1471,10 @@
       "acceptanceCriteria": [
         "Laravel scheduled command GenerateMonthlyInvoices dispatches GenerateInvoiceJob per active contract",
         "Each job: calculates rent (with active discounts), adds electricity charges for unbilled readings, creates invoice record + PDF",
-        "Duplicate prevention: idempotency check — skip if invoice already generated for this contract+month",
+        "Duplicate prevention: idempotency check \u00e2\u20ac\u201d skip if invoice already generated for this contract+month",
         "Job failure: logged to failed_jobs, does not block other contracts",
         "Manual trigger endpoint for testing: POST /api/invoices/generate-monthly (Admin only)",
-        "Tests: factory-created contracts → run job → assert invoices created with correct amounts",
+        "Tests: factory-created contracts \u00e2\u2020\u2019 run job \u00e2\u2020\u2019 assert invoices created with correct amounts",
         "Tests pass",
         "Typecheck passes"
       ],
@@ -1484,7 +1484,7 @@
     },
     {
       "id": "US-086",
-      "title": "E2E integration: contract termination → final invoice → deposit return flow",
+      "title": "E2E integration: contract termination \u00e2\u2020\u2019 final invoice \u00e2\u2020\u2019 deposit return flow",
       "description": "As a developer, I need the termination-to-close workflow tested as a complete flow.",
       "acceptanceCriteria": [
         "POST /api/contracts/{id}/terminate: creates pro-rated final invoice for remaining days of last month",
@@ -1492,7 +1492,7 @@
         "Unit status set to maintenance (not free) until damage inspection complete",
         "When damage report linked to termination is resolved: unit status transitions to free, waiting list auto-notify triggered",
         "Deposit return can only proceed after final invoice paid or explicitly waived",
-        "Tests: factory contract → terminate → assert final invoice, unit status, waiting list notification",
+        "Tests: factory contract \u00e2\u2020\u2019 terminate \u00e2\u2020\u2019 assert final invoice, unit status, waiting list notification",
         "Tests pass",
         "Typecheck passes"
       ],
@@ -1506,9 +1506,9 @@
       "description": "As a developer, I need key API endpoints optimized so the system handles 500 concurrent users with <200ms p95 response times.",
       "acceptanceCriteria": [
         "Dashboard KPI endpoint cached with 30-second TTL using Laravel cache (Redis or file)",
-        "All list endpoints use Eloquent eager loading (no N+1 queries) — verify with Laravel Telescope or query log in tests",
+        "All list endpoints use Eloquent eager loading (no N+1 queries) \u00e2\u20ac\u201d verify with Laravel Telescope or query log in tests",
         "Database indexes added: customers(email), customers(status), units(park_id, status), invoices(customer_id, status, due_date), applications(park_id, status, assigned_to), contracts(customer_id, status)",
-        "Reports endpoints paginated — no full table scans without date range filters",
+        "Reports endpoints paginated \u00e2\u20ac\u201d no full table scans without date range filters",
         "Tests: assert dashboard endpoint response time <200ms with 1000 seeded records",
         "Typecheck passes"
       ],
@@ -1540,11 +1540,11 @@
       "description": "As a developer, I need GDPR features so the system is legally compliant for German personal data.",
       "acceptanceCriteria": [
         "GDPR consent recorded on customer creation with timestamp",
-        "POST /api/customers/{id}/gdpr-delete: replaces PII fields with '[gelöscht]' placeholder, sets gdpr_deleted_at, retains all financial records (invoices/payments)",
+        "POST /api/customers/{id}/gdpr-delete: replaces PII fields with '[gel\u00c3\u00b6scht]' placeholder, sets gdpr_deleted_at, retains all financial records (invoices/payments)",
         "GET /api/customers/{id}/data-export: returns all data held about customer as JSON (for data subject access request)",
-        "Deleted customer profile shows anonymized state in UI with 'Daten gelöscht' badge",
-        "Soft deletes used throughout — no hard deletes of customer/contract/invoice data",
-        "Retention policy: system_settings entry data_retention_years (default 10) — no automated deletion, only manual GDPR delete",
+        "Deleted customer profile shows anonymized state in UI with 'Daten gel\u00c3\u00b6scht' badge",
+        "Soft deletes used throughout \u00e2\u20ac\u201d no hard deletes of customer/contract/invoice data",
+        "Retention policy: system_settings entry data_retention_years (default 10) \u00e2\u20ac\u201d no automated deletion, only manual GDPR delete",
         "Typecheck passes"
       ],
       "priority": 89,

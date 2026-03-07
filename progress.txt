@@ -215,3 +215,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - ParkFactory needed for any test involving parks; add to test suite early
   - HasFactory must be on model for Factory to work
 ---
+
+## 2026-03-07 - US-017
+- Created Admin/UserController: GET /api/admin/users (paginated, filter role/active), POST (create+temp password), PUT (update), DELETE (deactivate), POST /{id}/parks (sync)
+- Created Admin/EmployeeController: GET/POST/PUT/DELETE /api/admin/employees with show
+- Added EmployeeFactory + HasFactory to Employee model
+- Routes guarded by auth:sanctum + role:admin middleware
+- All mutations written to audit_logs with old/new values
+- 12 new tests pass, 36 total passing
+- Files changed: Admin/UserController.php, Admin/EmployeeController.php, EmployeeFactory.php, Employee.php, routes/api.php, tests/Feature/Admin/AdminUserTest.php
+- **Learnings for future iterations:**
+  - Admin controller subdirectory pattern: `app/Http/Controllers/Admin/`
+  - Route group: `Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(...)`
+  - Soft-delete for users = deactivate (active=false) + revoke tokens; don't call delete() on users
+  - AuditLog::create() pattern reused across all controllers for audit trail
+---
