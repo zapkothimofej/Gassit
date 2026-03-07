@@ -153,3 +153,13 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `longText` for HTML content (body_html, template_html) — handles large templates
   - sent_emails.template_id FK uses `->constrained('mail_templates')` (non-standard name)
 ---
+
+## 2026-03-07 - US-012
+- Created discount_rules, insurance_options, revenue_targets, system_settings, llm_access_codes migrations
+- system_settings seeded with 7 defaults in the migration using DB::table()->insert()
+- Created models: DiscountRule, InsuranceOption, RevenueTarget, SystemSetting, LlmAccessCode
+- All 5 migrations ran successfully
+- **Learnings for future iterations:**
+  - Seeding defaults in migration: use `DB::table('table')->insert([...])` in the up() method
+  - `unsignedSmallInteger` for year, `unsignedTinyInteger` for month (efficient storage)
+---
