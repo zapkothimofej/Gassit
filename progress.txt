@@ -1,0 +1,30 @@
+## Codebase Patterns
+- Laravel backend lives in `backend/` subdirectory
+- Use MariaDB portable (extracted to /tmp/mariadb-10.11.10-winx64) for local dev; start with: `/tmp/mariadb-10.11.10-winx64/bin/mysqld.exe --datadir=/tmp/mariadb-data --port=3306 --console &`
+- DB: gassit on 127.0.0.1:3306, root with no password
+- Run migrations: `cd backend && php artisan migrate --force`
+- PHP syntax check: `php -l <file>`
+- Composer at ~/bin/composer (installed manually)
+- Laravel 12 with Sanctum 4.x for API auth
+- `park_user` pivot: admin/main_manager have implicit park access (enforced in app logic, not DB)
+
+# Ralph Progress Log
+Started: Sat Mar  7 00:34:23 WEST 2026
+---
+
+## 2026-03-07 - US-001
+- Created Laravel 12 project in `backend/` with Composer
+- Modified users migration to add `role` (enum) and `active` (bool) columns
+- Created parks migration with soft deletes
+- Created park_user pivot migration with unique constraint
+- Published Sanctum migration for personal_access_tokens
+- Updated User model (fillable + casts + parks BelongsToMany)
+- Created Park model with SoftDeletes + users BelongsToMany
+- Installed MariaDB portable to /tmp for local migration testing
+- All 6 migrations ran successfully
+- **Learnings for future iterations:**
+  - MariaDB portable at /tmp/mariadb-10.11.10-winx64 — start server before running migrations
+  - The `gassit` DB must exist before running migrations (create via mysql -u root -e "CREATE DATABASE gassit")
+  - Laravel default users migration already includes password_reset_tokens and sessions tables
+  - Sanctum migration published via `php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --tag="sanctum-migrations"`
+---
