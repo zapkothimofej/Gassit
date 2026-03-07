@@ -74,3 +74,12 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `termination_reason_id` references `reference_items` (US-013, not yet created) — used `unsignedBigInteger` without FK constraint to avoid migration failure
   - `contract_renewals` has two FKs to `contracts` — second one needs explicit `->constrained('contracts')`
 ---
+
+## 2026-03-07 - US-006
+- Created deposits migration (contract_id/customer_id/park_id FKs, status enum, return_method nullable enum, mollie_payment_id)
+- Created Deposit model with BelongsTo relationships (contract, customer, park)
+- Migration ran successfully
+- **Learnings for future iterations:**
+  - Nullable enum column: `->enum('return_method', [...])->nullable()` works correctly
+  - No soft deletes on deposits — financial records should be immutable
+---
