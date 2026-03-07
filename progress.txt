@@ -189,3 +189,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `ResetPassword::createUrlUsing()` needed for API-only apps (no web routes for password.reset)
   - login_max_attempts from system_settings: use `ort 5` as default if not found
 ---
+
+## 2026-03-07 - US-015
+- Installed pragmarx/google2fa:^8.0 for TOTP
+- Added totp_secret and two_factor_enabled columns to users via migration
+- Created TwoFactorController: setup, enable, verify, disable endpoints
+- Modified AuthController login to return {requires_2fa, temp_token} when 2FA enabled
+- Added 2FA routes: /2fa/verify (public), /2fa/setup+enable+disable (protected)
+- All 6 2FA tests pass + all 8 auth tests still pass
+- **Learnings for future iterations:**
+  - TOTP verify endpoint is public (needs temp_token in body, not Bearer)
+  - `createToken('temp-2fa')` naming allows distinguishing temp from full tokens in TwoFactorController
+  - Google2FA::getCurrentOtp() in tests generates current valid TOTP code
+---

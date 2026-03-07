@@ -20,11 +20,14 @@ class User extends Authenticatable
         'role',
         'active',
         'login_attempts',
+        'totp_secret',
+        'two_factor_enabled',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'totp_secret',
     ];
 
     public function parks(): BelongsToMany
@@ -38,6 +41,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'active' => 'boolean',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 }

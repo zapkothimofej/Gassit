@@ -50,6 +50,14 @@ class AuthController extends Controller
 
         $user->update(['login_attempts' => 0]);
 
+        if ($user->two_factor_enabled) {
+            $tempToken = $user->createToken('temp-2fa')->plainTextToken;
+            return response()->json([
+                'requires_2fa' => true,
+                'temp_token' => $tempToken,
+            ]);
+        }
+
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
