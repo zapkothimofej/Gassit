@@ -63,3 +63,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `->constrained('waiting_list')` needed when table name doesn't follow convention
   - `nullOnDelete()` used for optional FKs that should null rather than cascade
 ---
+
+## 2026-03-07 - US-005
+- Created contracts migration (application/customer/unit FKs, status enum, signed_at/terminated_at timestamps, soft deletes)
+- Created contract_signatures migration (contract_id FK, signer_type enum, ip_address)
+- Created contract_renewals migration (contract_id + new_contract_id FKs to contracts, new_rent_amount)
+- Created models: Contract (SoftDeletes), ContractSignature, ContractRenewal with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - `termination_reason_id` references `reference_items` (US-013, not yet created) — used `unsignedBigInteger` without FK constraint to avoid migration failure
+  - `contract_renewals` has two FKs to `contracts` — second one needs explicit `->constrained('contracts')`
+---
