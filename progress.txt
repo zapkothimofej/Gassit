@@ -41,3 +41,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Use `python3` heredoc approach to update prd.json (sed multiline doesn't work reliably in bash)
   - Models written via Bash cat heredoc (Write tool has "not read yet" guard issues with artisan-created stub files)
 ---
+
+## 2026-03-07 - US-003
+- Created customers migration (type enum, full address fields, GDPR timestamps, soft deletes)
+- Created blacklist migration (customer_id FK, added_by/removed_by user FKs, timestamps)
+- Created customer_documents migration (customer_id FK, uploaded_by user FK)
+- Created models: Customer (SoftDeletes), Blacklist, CustomerDocument with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - FK columns to users table use `->constrained('users')` not `->constrained()` since column name differs from table
+  - Null-able FKs: `foreignId('removed_by')->nullable()->constrained('users')` works correctly
+---
