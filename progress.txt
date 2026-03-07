@@ -142,3 +142,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - JSON columns: `$table->json('old_values')->nullable()` works in MariaDB
   - Notification model name conflicts with Laravel's built-in - using custom model is fine as long as it's in App\Models
 ---
+
+## 2026-03-07 - US-011
+- Created mail_templates migration (park_id nullable FK, template_type enum, variables_json JSON, active bool)
+- Created sent_emails migration (customer_id/template_id/sent_by nullable FKs, status enum)
+- Created document_templates migration (park_id nullable FK, document_type enum, version int, active bool)
+- Created models: MailTemplate, SentEmail, DocumentTemplate with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - `longText` for HTML content (body_html, template_html) — handles large templates
+  - sent_emails.template_id FK uses `->constrained('mail_templates')` (non-standard name)
+---
