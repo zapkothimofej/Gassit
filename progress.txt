@@ -119,3 +119,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `reported_by` FK uses `->constrained('users')` since column name differs from table
   - `assigned_vendor_id` FK uses `->constrained('vendors')->nullOnDelete()` for nullable assignment
 ---
+
+## 2026-03-07 - US-009
+- Created electricity_meters migration (unit_id FK, meter_type enum, active bool, installed_at date)
+- Created electricity_readings migration (meter_id FK to electricity_meters, recorded_by FK to users, consumption nullable)
+- Created electricity_pricing migration (park_id FK, price_per_kwh decimal(10,6), valid_from/valid_to dates)
+- Created models: ElectricityMeter, ElectricityReading, ElectricityPricing with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - FK to non-conventional table name: `->constrained('electricity_meters')` needed for meter_id
+  - price_per_kwh uses decimal(10,6) for high precision kWh pricing
+---
