@@ -257,6 +257,28 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Files changed: UnitTypeController.php, UnitType.php, Unit.php, Park.php, UnitTypeFactory.php, UnitFactory.php, routes/api.php, tests/Feature/UnitType/UnitTypeTest.php
 - **Learnings for future iterations:**
   - Unit status enum values: 'free', 'reserved', 'rented', 'maintenance', 'inactive' (not 'available'/'occupied')
+- Contract status enum: 'draft','awaiting_signature','signed','active','terminated_by_customer','terminated_by_lfg','declined','expired'
+- Customer type enum: 'private','company'; status enum: 'new','tenant','not_renting','debtor','troublemaker','blacklisted'
+- Non-admin/main_manager roles need park_user pivot row for park access (ParkScopeMiddleware::hasAccessToPark)
   - Feature sync pattern: delete all + insert batch (not upsert) — simpler and atomic
   - UnitFactory needs both park_id and unit_type_id; use Park::factory() + UnitType::factory() as defaults
+---
+
+## 2026-03-08 - US-020
+- Created UnitController with CRUD at /api/parks/{parkId}/units and /api/units/{id}
+- Status transitions enforced: free→reserved→rented (requires active contract); rented→free (requires terminated contract)
+- POST /api/units/{id}/photos: multipart upload to S3 (Storage::fake('s3') in tests)
+- DELETE /api/units/{id}/photos/{photoId}: removes from S3 + DB
+- GET /api/units/{id}/history: returns past contracts with customer name
+- Added contracts() HasMany to Unit model
+- Added HasFactory to Customer and Contract models
+- Created CustomerFactory (type:'private', status:'new') and ContractFactory (status:'active')
+- Added routes for rental_manager role access (with park_user association required)
+- 19 new tests pass, 80 total passing
+- Files changed: UnitController.php, Unit.php, Customer.php, Contract.php, CustomerFactory.php, ContractFactory.php, routes/api.php, tests/Feature/Unit/UnitTest.php
+- **Learnings for future iterations:**
+  - Contract status enum: 'draft','awaiting_signature','signed','active','terminated_by_customer','terminated_by_lfg','declined','expired' (no plain 'terminated')
+  - Customer type enum: 'private','company' (not 'individual'); status enum: 'new','tenant','not_renting','debtor','troublemaker','blacklisted'
+  - Non-admin/main_manager roles need park_user association for park access (attach in test setUp)
+  - units.size_m2 has no default value — must be provided in create requests
 ---
