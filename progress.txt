@@ -329,3 +329,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `WaitingList` model needs `protected $table = 'waiting_list'` (Eloquent would auto-pluralize to `waiting_lists`)
   - Status transition map stored as class constant — clean pattern for enforcing finite state machine
 ---
+
+## 2026-03-08 - US-024
+- Created WaitingListController: GET/POST /api/parks/{parkId}/waiting-list, PUT/DELETE /api/waiting-list/{id}, POST /{id}/notify, POST /{id}/convert
+- Created NotifyWaitingListEntries job (ShouldQueue): dispatched when unit status changes to 'free', finds matching entries by park_id+unit_type_id, creates WaitingListNotification + SentEmail records
+- Added HasFactory + WaitingListFactory to WaitingList model
+- Updated UnitController.updateStatus to dispatch NotifyWaitingListEntries when newStatus === 'free'
+- List sorted by priority_score DESC, created_at ASC
+- 12 new tests pass, 142 total passing
+- Files changed: WaitingListController.php, NotifyWaitingListEntries.php, WaitingList.php (HasFactory), WaitingListFactory.php, UnitController.php (job dispatch), routes/api.php, tests/Feature/WaitingList/WaitingListTest.php
+- **Learnings for future iterations:**
+  - Queue::fake() in setUp() captures dispatched jobs; use Queue::assertPushed() with closure to check job properties
+  - Job class properties used in Queue::assertPushed() closure must be public (readonly works)
+  - Jobs directory must be created manually (app/Jobs/); no artisan scaffold needed
+  - notified_at is in WaitingList $fillable — update via $entry->update(['notified_at' => now()])
+---
