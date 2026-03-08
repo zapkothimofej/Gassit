@@ -17,6 +17,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DunningController;
+use App\Http\Controllers\ElectricityMeterController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -208,4 +209,21 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->prefi
     Route::post('/{customerId}/pause', [DunningController::class, 'pause']);
     Route::post('/{customerId}/escalate', [DunningController::class, 'escalate']);
     Route::post('/{customerId}/resolve', [DunningController::class, 'resolve']);
+});
+
+// Electricity meters
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker'])->group(function () {
+    Route::get('/units/{unitId}/meters', [ElectricityMeterController::class, 'index']);
+    Route::post('/units/{unitId}/meters', [ElectricityMeterController::class, 'store']);
+    Route::put('/meters/{id}', [ElectricityMeterController::class, 'update']);
+    Route::delete('/meters/{id}', [ElectricityMeterController::class, 'destroy']);
+    Route::post('/meters/{meterId}/readings', [ElectricityMeterController::class, 'storeReading']);
+    Route::get('/meters/{meterId}/readings', [ElectricityMeterController::class, 'indexReadings']);
+    Route::post('/meters/{meterId}/readings/{readingId}/bill', [ElectricityMeterController::class, 'billReading']);
+});
+
+// Electricity pricing
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function () {
+    Route::get('/parks/{parkId}/electricity-pricing', [ElectricityMeterController::class, 'pricingIndex']);
+    Route::post('/parks/{parkId}/electricity-pricing', [ElectricityMeterController::class, 'pricingStore']);
 });

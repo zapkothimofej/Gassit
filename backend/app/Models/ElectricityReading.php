@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ElectricityReading extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'meter_id',
         'reading_date',
