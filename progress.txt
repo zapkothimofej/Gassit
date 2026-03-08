@@ -361,3 +361,21 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - notice_period_days validation: terminated_at (now) must be >= notice_date + notice_period_days
   - Use notice_period_days=0 in tests to bypass notice period validation
 ---
+
+## 2026-03-08 - US-026
+- Created DepositController: GET /api/deposits (paginated, filter park/status), GET /api/contracts/{id}/deposit, PUT /api/deposits/{id}/received, POST /api/deposits/{id}/return, POST /api/deposits/{id}/mollie-payout
+- Status transitions enforced: pending→received; received|held→returned|partially_returned (only if contract terminated); Mollie payout only if return_method=mollie_payout and no existing mollie_payment_id
+- Partial return when deduction_amount > 0: return_amount = deposit.amount - deduction_amount
+- Mollie payout stub: generates mollie-payout-{uniqid}, idempotent (rejects if mollie_payment_id already set)
+- Created DepositFactory with Contract/Customer/Park factories as defaults
+- Added HasFactory to Deposit model
+- Routes guarded by auth:sanctum + role:admin,main_manager,rental_manager,accountant
+- All mutations logged to audit_logs
+- 15 new tests pass, 177 total passing
+- Files changed: DepositController.php, Deposit.php (HasFactory), DepositFactory.php, routes/api.php, tests/Feature/Deposit/DepositTest.php
+- **Learnings for future iterations:**
+  - Deposit status enum: 'pending','received','held','returned','partially_returned','forfeited'
+  - Can only process return if contract.status in ['terminated_by_customer','terminated_by_lfg']
+  - Mollie payout idempotency: check mollie_payment_id before creating new payout
+  - DepositFactory needs explicit park_id — Contract factory creates its own unit/customer so park may differ; always create deposit with matching park_id from contract.unit.park_id in real usage
+---
