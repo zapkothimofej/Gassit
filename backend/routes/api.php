@@ -18,6 +18,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DunningController;
 use App\Http\Controllers\ElectricityMeterController;
+use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -226,4 +227,18 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_
 Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function () {
     Route::get('/parks/{parkId}/electricity-pricing', [ElectricityMeterController::class, 'pricingIndex']);
     Route::post('/parks/{parkId}/electricity-pricing', [ElectricityMeterController::class, 'pricingStore']);
+});
+
+// Vendors
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('vendors')->group(function () {
+    Route::get('/', [VendorController::class, 'index']);
+    Route::post('/', [VendorController::class, 'store']);
+    Route::get('/{id}', [VendorController::class, 'show']);
+    Route::put('/{id}', [VendorController::class, 'update']);
+    Route::delete('/{id}', [VendorController::class, 'destroy']);
+    Route::get('/{id}/invoices', [VendorController::class, 'invoicesIndex']);
+    Route::post('/{id}/invoices', [VendorController::class, 'invoicesStore']);
+    Route::put('/{id}/invoices/{invoiceId}', [VendorController::class, 'invoicesUpdate']);
+    Route::post('/{id}/invoices/{invoiceId}/pay', [VendorController::class, 'invoicesPay']);
+    Route::get('/{id}/damage-reports', [VendorController::class, 'damageReports']);
 });
