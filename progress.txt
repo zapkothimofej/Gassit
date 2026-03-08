@@ -716,3 +716,13 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Added /customers and /customers/:id routes to router; created CustomerDetailView.vue stub
 - vue-tsc --noEmit typecheck passes
 ---
+
+## 2026-03-08 - US-050
+- Created CustomerDetailView.vue: header with name/type/status, tabs (info/contracts/invoices/applications/documents/activity)
+- Personal info: editable form grid, save button, GDPR consent timestamp
+- Each tab loads data from respective APIs using Promise.allSettled
+- Actions: Add/Remove blacklist (modal + reason), GDPR Delete (admin only, modal confirm)
+- Document upload/delete
+- Activity timeline from audit-logs
+- vue-tsc --noEmit typecheck passes
+---
