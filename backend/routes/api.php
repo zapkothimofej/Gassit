@@ -22,6 +22,8 @@ use App\Http\Controllers\VendorController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\WaitingListController;
+use App\Http\Controllers\DocumentTemplateController;
+use App\Http\Controllers\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -272,4 +274,19 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->pr
     Route::post('/mass-send', [MailController::class, 'massSend']);
     Route::post('/schedule', [MailController::class, 'schedule']);
     Route::get('/sent', [MailController::class, 'sent']);
+});
+
+// Document templates
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('document-templates')->group(function () {
+    Route::get('/', [DocumentTemplateController::class, 'index']);
+    Route::post('/', [DocumentTemplateController::class, 'store']);
+    Route::put('/{id}', [DocumentTemplateController::class, 'update']);
+    Route::post('/{id}/clone', [DocumentTemplateController::class, 'clone']);
+});
+
+// System settings
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('system-settings')->group(function () {
+    Route::get('/', [SystemSettingController::class, 'index']);
+    Route::put('/', [SystemSettingController::class, 'update']);
+    Route::get('/{key}', [SystemSettingController::class, 'show']);
 });
