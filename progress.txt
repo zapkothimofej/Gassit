@@ -481,3 +481,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Consumption = current_value - previous_value (ordered by reading_date DESC, id DESC for latest)
   - Billing: find pricing where valid_from <= reading_date AND (valid_to IS NULL OR valid_to >= reading_date)
 ---
+
+## 2026-03-08 - US-033
+- Created VendorController: GET/POST/PUT/DELETE /api/vendors (filter by park/active)
+- GET/POST/PUT /api/vendors/{id}/invoices, POST /{id}/invoices/{invoiceId}/pay
+- GET /api/vendors/{id}/damage-reports: lists damage reports assigned to vendor
+- Pay endpoint: idempotent (rejects if already paid_at is set)
+- Added HasFactory to VendorInvoice model; created VendorInvoiceFactory
+- Routes guarded by role:admin,main_manager,rental_manager
+- All mutations logged to audit_logs
+- 15 new tests pass, 268 total passing
+- Files changed: VendorController.php, VendorInvoice.php (HasFactory), VendorInvoiceFactory.php, routes/api.php, tests/Feature/Vendor/VendorTest.php
+- **Learnings for future iterations:**
+  - VendorInvoice has no status enum — paid state tracked via `paid_at` nullable timestamp
+  - vendor_invoices.amount is cast as decimal:2 — JSON returns "500.00" string (assert with string)
+  - Park filter on vendors uses direct `park_id` column (not relation join needed)
+---
