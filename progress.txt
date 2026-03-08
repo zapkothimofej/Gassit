@@ -675,3 +675,17 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Tasks dashboard API returns {todo: [], in_progress: [], done: []} — not a standard paginated response
   - Calendar tasks are fetched from /tasks/calendar with from/to date params
 ---
+
+## 2026-03-08 - US-046
+- Created frontend/src/api/applications.ts with fetchApplications, createApplication, searchCustomers
+- Created frontend/src/api/parks.ts with fetchParks, fetchUnitTypes, fetchUsers
+- Created ApplicationsView.vue: AppTable, AppPagination, filter bar (park/status/assigned_to/date range/search), CreateApplicationModal
+- CreateApplicationModal: customer live search with dropdown, park+unit type cascading selects, source select, date, notes
+- Routes to /applications/{id} on row click
+- vue-tsc --noEmit typecheck passes
+- Files changed: ApplicationsView.vue, api/applications.ts, api/parks.ts
+- **Learnings for future iterations:**
+  - Customer live search: debounced 300ms, results shown in dropdown, selection stored as customer_id
+  - Unit types depend on park selection (cascade: watch park_id, fetch /parks/{id}/unit-types)
+  - AppTable row type: cast rows to Record<string, unknown>[] for generic component
+---
