@@ -530,3 +530,17 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - SentEmailFactory needs explicit `sent_at` — column is nullable but factory should set it for status=sent
   - Queue::assertPushed count is cumulative across all dispatches in the test
 ---
+
+## 2026-03-08 - US-036
+- Created DocumentTemplateController: GET/POST/PUT /api/document-templates, POST /api/document-templates/{id}/clone
+- Created SystemSettingController: GET /api/system-settings, GET /api/system-settings/{key}, PUT /api/system-settings (bulk update)
+- Clone: increments version (max existing + 1), sets active=false, appends (vN) to name
+- System settings update: bulk array input, skips unknown keys silently, logs each change to audit_logs
+- Routes: document-templates guarded by role:admin,main_manager; system-settings by role:admin
+- 19 new tests pass, 318 total passing
+- Files changed: DocumentTemplateController.php, SystemSettingController.php, routes/api.php, tests/Feature/Settings/DocumentTemplateTest.php, tests/Feature/Settings/SystemSettingTest.php
+- **Learnings for future iterations:**
+  - System settings PUT uses bulk array format: `{settings: [{key, value}, ...]}`
+  - Clone pattern: max(version) + 1 scoped to document_type (and park_id if applicable)
+  - DocumentTemplate has no soft deletes — omit DELETE endpoint per PRD
+---
