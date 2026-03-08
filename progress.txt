@@ -311,3 +311,21 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Contracts table has no direct park_id; use applications (has park_id) for park-based customer filtering
   - GET /api/customers/blacklist must be registered BEFORE GET /api/customers/{id} to avoid route conflicts
 ---
+
+## 2026-03-08 - US-023
+- Created ApplicationController: GET/POST/PUT/DELETE /api/applications, status transitions, assign, credit-check stub, waiting-list, convert
+- Status transitions: new→in_progress→waiting→completed|declined (enforced via transition map)
+- Credit check: stub adapter stores fake PDF to S3, returns score/risk_level/checked_at
+- Waiting list: sets status→waiting, creates waiting_list record with FK to application
+- Convert: assigns free/reserved unit, creates draft contract, marks application completed, unit→reserved
+- Auto-acknowledgment email: creates SentEmail record with 'welcome' template (queued status)
+- ApplicationFactory with Park/Customer/UnitType factories as defaults
+- Added HasFactory + protected $table = 'waiting_list' to WaitingList model
+- 20 new tests pass, 130 total passing
+- Files: ApplicationController.php, Application.php (HasFactory), WaitingList.php ($table fix), ApplicationFactory.php, routes/api.php, tests/Feature/Application/ApplicationTest.php
+- **Learnings for future iterations:**
+  - `Application::create($data)` without explicit `status` needs `$application->refresh()` to get DB default value
+  - Eloquent serializes BelongsTo relations using snake_case of method name: `assignedTo()` → `assigned_to` key in JSON, which conflicts with the FK column `assigned_to`; don't eager load when returning the FK value
+  - `WaitingList` model needs `protected $table = 'waiting_list'` (Eloquent would auto-pluralize to `waiting_lists`)
+  - Status transition map stored as class constant — clean pattern for enforcing finite state machine
+---
