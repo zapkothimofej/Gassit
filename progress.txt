@@ -465,3 +465,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - resolved_at should be set automatically when status transitions to 'resolved'
   - Vendor model needs HasFactory for test support
 ---
+
+## 2026-03-08 - US-032
+- Created ElectricityMeterController: GET/POST /api/units/{unitId}/meters, PUT/DELETE /api/meters/{id}
+- POST /api/meters/{id}/readings: records reading with consumption computed from previous reading, optional S3 photo
+- GET /api/meters/{id}/readings: lists readings with stored consumption
+- POST /api/meters/{id}/readings/{readingId}/bill: finds applicable pricing, creates InvoiceItem (electricity), adds to existing draft invoice or creates new one
+- GET/POST /api/parks/{parkId}/electricity-pricing: list/create pricing periods (new period closes previous open period)
+- Added HasFactory to ElectricityMeter, ElectricityReading, ElectricityPricing models
+- Created ElectricityMeterFactory, ElectricityReadingFactory, ElectricityPricingFactory
+- 14 new tests pass, 253 total passing
+- Files changed: ElectricityMeterController.php, ElectricityMeter.php, ElectricityReading.php, ElectricityPricing.php, 3 factories, routes/api.php, tests/Feature/Electricity/ElectricityTest.php
+- **Learnings for future iterations:**
+  - `ElectricityPricing` model needs `protected $table = 'electricity_pricing'` — Eloquent auto-pluralizes to `electricity_pricings`
+  - Consumption = current_value - previous_value (ordered by reading_date DESC, id DESC for latest)
+  - Billing: find pricing where valid_from <= reading_date AND (valid_to IS NULL OR valid_to >= reading_date)
+---
