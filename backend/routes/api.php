@@ -19,6 +19,7 @@ use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DunningController;
 use App\Http\Controllers\ElectricityMeterController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\MailController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
@@ -254,4 +255,21 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_
     Route::delete('/{id}', [TaskController::class, 'destroy']);
     Route::put('/{id}/status', [TaskController::class, 'updateStatus']);
     Route::post('/{id}/assign', [TaskController::class, 'assign']);
+});
+
+// Mail templates
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->prefix('mail-templates')->group(function () {
+    Route::get('/', [MailController::class, 'templatesIndex']);
+    Route::post('/', [MailController::class, 'templatesStore']);
+    Route::put('/{id}', [MailController::class, 'templatesUpdate']);
+    Route::delete('/{id}', [MailController::class, 'templatesDestroy']);
+});
+
+// Mail send/preview/log
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->prefix('mail')->group(function () {
+    Route::post('/preview', [MailController::class, 'preview']);
+    Route::post('/send', [MailController::class, 'send']);
+    Route::post('/mass-send', [MailController::class, 'massSend']);
+    Route::post('/schedule', [MailController::class, 'schedule']);
+    Route::get('/sent', [MailController::class, 'sent']);
 });
