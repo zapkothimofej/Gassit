@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DiscountRuleController;
 use App\Http\Controllers\InsuranceOptionController;
 use App\Http\Controllers\ParkController;
@@ -80,6 +81,20 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks/{p
 Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('unit-types/{id}')->group(function () {
     Route::get('/discount-rules', [DiscountRuleController::class, 'forUnitType']);
     Route::get('/insurance-options', [InsuranceOptionController::class, 'forUnitType']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('customers')->group(function () {
+    Route::get('/blacklist', [CustomerController::class, 'blacklistIndex']);
+    Route::get('/', [CustomerController::class, 'index']);
+    Route::post('/', [CustomerController::class, 'store']);
+    Route::put('/{id}', [CustomerController::class, 'update']);
+    Route::delete('/{id}', [CustomerController::class, 'destroy']);
+    Route::post('/{id}/documents', [CustomerController::class, 'uploadDocument']);
+    Route::get('/{id}/documents', [CustomerController::class, 'listDocuments']);
+    Route::delete('/{id}/documents/{docId}', [CustomerController::class, 'deleteDocument']);
+    Route::post('/{id}/gdpr-delete', [CustomerController::class, 'gdprDelete']);
+    Route::post('/{id}/blacklist', [CustomerController::class, 'blacklist']);
+    Route::delete('/{id}/blacklist', [CustomerController::class, 'removeBlacklist']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {

@@ -49,4 +49,14 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerDocument::class);
     }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
 }

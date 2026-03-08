@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Blacklist extends Model
 {
+    protected $table = 'blacklist';
+
     protected $fillable = [
         'customer_id',
         'reason',
