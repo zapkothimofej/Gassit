@@ -19,6 +19,7 @@ use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DunningController;
 use App\Http\Controllers\ElectricityMeterController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -241,4 +242,16 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->p
     Route::put('/{id}/invoices/{invoiceId}', [VendorController::class, 'invoicesUpdate']);
     Route::post('/{id}/invoices/{invoiceId}/pay', [VendorController::class, 'invoicesPay']);
     Route::get('/{id}/damage-reports', [VendorController::class, 'damageReports']);
+});
+
+// Tasks
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker,office_worker'])->prefix('tasks')->group(function () {
+    Route::get('/dashboard', [TaskController::class, 'dashboard']);
+    Route::get('/calendar', [TaskController::class, 'calendar']);
+    Route::get('/', [TaskController::class, 'index']);
+    Route::post('/', [TaskController::class, 'store']);
+    Route::put('/{id}', [TaskController::class, 'update']);
+    Route::delete('/{id}', [TaskController::class, 'destroy']);
+    Route::put('/{id}/status', [TaskController::class, 'updateStatus']);
+    Route::post('/{id}/assign', [TaskController::class, 'assign']);
 });
