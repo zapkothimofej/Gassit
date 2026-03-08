@@ -15,6 +15,7 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DunningController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -187,4 +188,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/employees/{id}', [EmployeeController::class, 'show']);
     Route::put('/employees/{id}', [EmployeeController::class, 'update']);
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->prefix('debtors')->group(function () {
+    Route::get('/', [DunningController::class, 'debtors']);
+    Route::post('/{customerId}/pause', [DunningController::class, 'pause']);
+    Route::post('/{customerId}/escalate', [DunningController::class, 'escalate']);
+    Route::post('/{customerId}/resolve', [DunningController::class, 'resolve']);
 });

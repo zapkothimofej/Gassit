@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Invoice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,12 +30,14 @@ class Customer extends Model
         'gdpr_consent_at',
         'gdpr_deleted_at',
         'notes',
+        'dunning_paused_until',
     ];
 
     protected function casts(): array
     {
         return [
             'dob' => 'date',
+            'dunning_paused_until' => 'datetime',
             'gdpr_consent_at' => 'datetime',
             'gdpr_deleted_at' => 'datetime',
         ];
@@ -58,5 +61,9 @@ class Customer extends Model
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
+    }
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 }
