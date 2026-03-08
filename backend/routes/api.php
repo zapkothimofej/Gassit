@@ -28,6 +28,8 @@ use App\Http\Controllers\ReferenceItemController;
 use App\Http\Controllers\LlmAccessCodeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -325,4 +327,22 @@ Route::middleware(['auth:sanctum'])->prefix('notifications')->group(function () 
 // Global search
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/search', [SearchController::class, 'search']);
+});
+
+// Dashboard
+Route::middleware(['auth:sanctum'])->prefix('dashboard')->group(function () {
+    Route::get('/kpis', [DashboardController::class, 'kpis']);
+    Route::get('/mahnstuffe', [DashboardController::class, 'mahnstuffe']);
+    Route::get('/revenue', [DashboardController::class, 'revenue']);
+});
+
+// Reports
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant,office_worker,customer_service'])->prefix('reports')->group(function () {
+    Route::get('/applications', [ReportController::class, 'applications']);
+    Route::get('/customers', [ReportController::class, 'customers']);
+    Route::get('/units', [ReportController::class, 'units']);
+    Route::get('/finance', [ReportController::class, 'finance']);
+});
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('reports')->group(function () {
+    Route::get('/audit', [ReportController::class, 'audit']);
 });
