@@ -11,6 +11,7 @@ use App\Http\Controllers\InsuranceOptionController;
 use App\Http\Controllers\ParkController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UnitTypeController;
+use App\Http\Controllers\ContractController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -122,6 +123,24 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
     Route::post('/{id}/notify', [WaitingListController::class, 'notify']);
     Route::post('/{id}/convert', [WaitingListController::class, 'convert']);
 });
+
+// Contracts
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('applications')->group(function () {
+    Route::post('/{id}/contract', [ContractController::class, 'generateFromApplication']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('contracts')->group(function () {
+    Route::get('/', [ContractController::class, 'index']);
+    Route::get('/{id}', [ContractController::class, 'show']);
+    Route::put('/{id}', [ContractController::class, 'update']);
+    Route::post('/{id}/send-for-signature', [ContractController::class, 'sendForSignature']);
+    Route::post('/{id}/activate', [ContractController::class, 'activate']);
+    Route::post('/{id}/terminate', [ContractController::class, 'terminate']);
+    Route::post('/{id}/renew', [ContractController::class, 'renew']);
+});
+
+// E-sign webhook (public — no auth, signed by provider)
+Route::post('/webhooks/esign', [ContractController::class, 'esignWebhook']);
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
