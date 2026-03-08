@@ -648,3 +648,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - AppModal uses Teleport to="body" to escape stacking context issues
   - FormSelect emits string value from HTMLSelectElement.value (convert to number when needed in parent)
 ---
+
+## 2026-03-08 - US-044
+- Updated LoginView: handles requires_2fa → redirect to /login/2fa with temp_token query param
+- Created TwoFactorView: 6-digit code input, POST /auth/2fa/verify with temp_token, sets auth token on success
+- Created PasswordResetView: email field → POST /auth/forgot-password, success message on submit
+- Created PasswordResetConfirmView: email+password+confirm fields → POST /auth/reset-password with token from URL param
+- Added 3 new public routes to router: /login/2fa, /password-reset, /password-reset/:token
+- vue-tsc --noEmit typecheck passes
+- Files changed: LoginView.vue, TwoFactorView.vue, PasswordResetView.vue, PasswordResetConfirmView.vue, router/index.ts
+- **Learnings for future iterations:**
+  - TwoFactorView receives temp_token via route query param (set by LoginView on requires_2fa response)
+  - auth.token is a ref — directly assignable from outside the store (e.g. in 2FA view)
+---
