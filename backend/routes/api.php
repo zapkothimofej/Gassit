@@ -30,6 +30,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RevenueTargetController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -345,4 +346,12 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
 });
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('reports')->group(function () {
     Route::get('/audit', [ReportController::class, 'audit']);
+});
+
+// Revenue targets
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->group(function () {
+    Route::get('/parks/{parkId}/revenue-targets', [RevenueTargetController::class, 'index']);
+    Route::post('/parks/{parkId}/revenue-targets', [RevenueTargetController::class, 'store']);
+    Route::put('/revenue-targets/{id}', [RevenueTargetController::class, 'update']);
+    Route::get('/parks/{parkId}/revenue-targets/{year}/{month}/actual', [RevenueTargetController::class, 'actual']);
 });
