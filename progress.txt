@@ -602,3 +602,15 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - updateOrCreate pattern for upsert on composite natural key (park_id+year+month)
   - actual revenue: filter invoices by status='paid' + whereYear/whereMonth on created_at
 ---
+
+## 2026-03-08 - US-041
+- Created AuditLogController: GET /api/audit-logs (paginated), GET /{id}, GET /export (CSV)
+- Filters: user_id, model_type, model_id, from/to date range
+- CSV export: header row + one line per audit entry (no external library needed)
+- Routes guarded by role:admin (admin-only per spec)
+- 11 new tests pass, 389 total passing
+- Files changed: AuditLogController.php, routes/api.php, tests/Feature/AuditLog/AuditLogTest.php
+- **Learnings for future iterations:**
+  - AuditLog `created_at` is NOT in $fillable — use `forceFill(['created_at' => ...])->save()` in tests to set explicit timestamps
+  - export route GET /audit-logs/export must be declared BEFORE GET /audit-logs/{id} to avoid route conflict
+---
