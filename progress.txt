@@ -245,3 +245,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Storage::fake('s3') works for testing S3 uploads without real S3 credentials
   - Route middleware `role:admin,main_manager` allows both roles (comma-separated in RoleMiddleware)
 ---
+
+## 2026-03-08 - US-019
+- Created UnitTypeController with full CRUD at /api/parks/{parkId}/unit-types
+- POST /api/unit-types/{id}/floor-plan: PDF upload to S3 (Storage::fake('s3') in tests)
+- POST /api/unit-types/{id}/features: sync replaces all features via delete+insert
+- GET /api/unit-types/{id}/availability: returns count of units with status='free'
+- Added HasFactory + UnitTypeFactory, UnitFactory for test support
+- Added HasFactory to Unit model; added unitTypes() HasMany to Park model
+- All 12 new tests pass, 61 total passing
+- Files changed: UnitTypeController.php, UnitType.php, Unit.php, Park.php, UnitTypeFactory.php, UnitFactory.php, routes/api.php, tests/Feature/UnitType/UnitTypeTest.php
+- **Learnings for future iterations:**
+  - Unit status enum values: 'free', 'reserved', 'rented', 'maintenance', 'inactive' (not 'available'/'occupied')
+  - Feature sync pattern: delete all + insert batch (not upsert) — simpler and atomic
+  - UnitFactory needs both park_id and unit_type_id; use Park::factory() + UnitType::factory() as defaults
+---
