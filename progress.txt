@@ -699,3 +699,13 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - vue-tsc --noEmit typecheck passes
 - Files changed: ApplicationDetailView.vue, router/index.ts
 ---
+
+## 2026-03-08 - US-048
+- Created frontend/src/api/waitingList.ts with CRUD + notify/convert functions
+- Created WaitingListView.vue: table with position/customer/unit type/priority score (inline)/added/notified/actions
+- Filter by park + unit type (cascading); Add modal with customer search + park/unit type cascade
+- Notify/Convert/Remove per row actions
+- Priority score: inline number input saves on blur via PUT /api/waiting-list/{id}
+- Added /waiting-list route to router
+- vue-tsc --noEmit typecheck passes
+---
