@@ -689,3 +689,13 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Unit types depend on park selection (cascade: watch park_id, fetch /parks/{id}/unit-types)
   - AppTable row type: cast rows to Record<string, unknown>[] for generic component
 ---
+
+## 2026-03-08 - US-047
+- Created ApplicationDetailView.vue: status stepper, customer card, unit request card, actions sidebar, credit check, documents, activity timeline
+- Added route /applications/:id (ApplicationDetail)
+- Actions: assign (modal with user select), status change buttons per TRANSITIONS map, credit check, waiting list, convert to contract (modal with unit select)
+- Document upload via file input + multipart FormData to /customers/{id}/documents
+- Activity timeline from /audit-logs?model_type=Application&model_id=X
+- vue-tsc --noEmit typecheck passes
+- Files changed: ApplicationDetailView.vue, router/index.ts
+---
