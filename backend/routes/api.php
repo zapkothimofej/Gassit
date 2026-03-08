@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DiscountRuleController;
 use App\Http\Controllers\InsuranceOptionController;
@@ -95,6 +96,18 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
     Route::post('/{id}/gdpr-delete', [CustomerController::class, 'gdprDelete']);
     Route::post('/{id}/blacklist', [CustomerController::class, 'blacklist']);
     Route::delete('/{id}/blacklist', [CustomerController::class, 'removeBlacklist']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('applications')->group(function () {
+    Route::get('/', [ApplicationController::class, 'index']);
+    Route::post('/', [ApplicationController::class, 'store']);
+    Route::put('/{id}', [ApplicationController::class, 'update']);
+    Route::delete('/{id}', [ApplicationController::class, 'destroy']);
+    Route::put('/{id}/status', [ApplicationController::class, 'updateStatus']);
+    Route::post('/{id}/assign', [ApplicationController::class, 'assign']);
+    Route::post('/{id}/credit-check', [ApplicationController::class, 'creditCheck']);
+    Route::post('/{id}/waiting-list', [ApplicationController::class, 'moveToWaitingList']);
+    Route::post('/{id}/convert', [ApplicationController::class, 'convert']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {

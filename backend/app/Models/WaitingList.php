@@ -11,6 +11,8 @@ class WaitingList extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'waiting_list';
+
     protected $fillable = [
         'park_id',
         'customer_id',
