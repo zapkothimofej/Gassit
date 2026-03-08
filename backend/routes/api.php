@@ -13,6 +13,7 @@ use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UnitTypeController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DepositController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -150,6 +151,17 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
     Route::put('/deposits/{id}/received', [DepositController::class, 'markReceived']);
     Route::post('/deposits/{id}/return', [DepositController::class, 'processReturn']);
     Route::post('/deposits/{id}/mollie-payout', [DepositController::class, 'molliePayout']);
+});
+
+// Invoices
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant'])->group(function () {
+    Route::get('/invoices/datev-export', [InvoiceController::class, 'datevExport']);
+    Route::get('/invoices', [InvoiceController::class, 'index']);
+    Route::post('/invoices', [InvoiceController::class, 'store']);
+    Route::post('/invoices/generate-monthly', [InvoiceController::class, 'generateMonthly']);
+    Route::get('/invoices/{id}/pdf', [InvoiceController::class, 'pdf']);
+    Route::post('/invoices/{id}/send', [InvoiceController::class, 'send']);
+    Route::post('/invoices/{id}/cancel', [InvoiceController::class, 'cancel']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
