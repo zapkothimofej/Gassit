@@ -11,6 +11,7 @@ use App\Http\Controllers\InsuranceOptionController;
 use App\Http\Controllers\ParkController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UnitTypeController;
+use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -108,6 +109,18 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
     Route::post('/{id}/credit-check', [ApplicationController::class, 'creditCheck']);
     Route::post('/{id}/waiting-list', [ApplicationController::class, 'moveToWaitingList']);
     Route::post('/{id}/convert', [ApplicationController::class, 'convert']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('parks/{parkId}/waiting-list')->group(function () {
+    Route::get('/', [WaitingListController::class, 'index']);
+    Route::post('/', [WaitingListController::class, 'store']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('waiting-list')->group(function () {
+    Route::put('/{id}', [WaitingListController::class, 'update']);
+    Route::delete('/{id}', [WaitingListController::class, 'destroy']);
+    Route::post('/{id}/notify', [WaitingListController::class, 'notify']);
+    Route::post('/{id}/convert', [WaitingListController::class, 'convert']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {

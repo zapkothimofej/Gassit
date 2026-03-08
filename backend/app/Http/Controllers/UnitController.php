@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Middleware\ParkScopeMiddleware;
+use App\Jobs\NotifyWaitingListEntries;
 use App\Models\AuditLog;
 use App\Models\Contract;
 use App\Models\Park;
@@ -155,6 +156,10 @@ class UnitController extends Controller
         $unit->update(['status' => $newStatus]);
 
         $this->writeAuditLog($request, 'status_change', $unit, $old, ['status' => $newStatus]);
+
+        if ($newStatus === 'free') {
+            NotifyWaitingListEntries::dispatch($unit->id);
+        }
 
         return response()->json($unit->fresh());
     }
