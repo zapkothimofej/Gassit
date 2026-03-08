@@ -632,3 +632,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - useAuthStore() can be called inside axios interceptors (after pinia is created in main.ts)
   - Park selector in TopBar uses auth.parks — populated after login/fetchUser
 ---
+
+## 2026-03-08 - US-043
+- Created 9 shared UI components in frontend/src/components/
+- AppButton: variants (primary/secondary/danger/ghost), sizes (sm/md/lg), loading spinner
+- StatusBadge: maps status string to color (green/yellow/red/gray sets)
+- AppTable: slot-based columns, sortable headers, row-click event, empty state slot
+- AppModal: title + default + footer slots, backdrop close, v-model for open state
+- AppPagination: prev/next/page buttons with ellipsis, emits page-change
+- FormInput, FormSelect, FormDatePicker, FormTextarea: label, error, v-model, required marker
+- All typed with TypeScript props interfaces
+- vue-tsc --noEmit typecheck passes
+- **Learnings for future iterations:**
+  - AppTable uses Record<string, unknown> for row type (generic enough for all APIs)
+  - AppModal uses Teleport to="body" to escape stacking context issues
+  - FormSelect emits string value from HTMLSelectElement.value (convert to number when needed in parent)
+---
