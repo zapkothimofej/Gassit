@@ -282,3 +282,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Non-admin/main_manager roles need park_user association for park access (attach in test setUp)
   - units.size_m2 has no default value — must be provided in create requests
 ---
+
+## 2026-03-08 - US-021
+- Created DiscountRuleController: GET/POST/PUT/DELETE /api/parks/{parkId}/discount-rules
+- Created InsuranceOptionController: GET/POST/PUT/DELETE /api/parks/{parkId}/insurance-options
+- Added GET /api/unit-types/{id}/discount-rules and GET /api/unit-types/{id}/insurance-options (returns park-wide + unit-type-specific active records)
+- Added routes and imports to routes/api.php
+- Created tests: tests/Feature/Pricing/DiscountRuleTest.php, InsuranceOptionTest.php
+- All 14 new tests pass, 94 total passing
+- **Learnings for future iterations:**
+  - main_manager has implicit access to ALL parks (ParkScopeMiddleware) — don't test park isolation with main_manager role
+  - forUnitType query: filter by park_id AND (unit_type_id IS NULL OR unit_type_id = X) AND active = true
+  - New test directories (e.g. tests/Feature/Pricing/) work without additional config
+---
