@@ -24,6 +24,8 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\WaitingListController;
 use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\ReferenceItemController;
+use App\Http\Controllers\LlmAccessCodeController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -289,4 +291,23 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('system-settings')->gr
     Route::get('/', [SystemSettingController::class, 'index']);
     Route::put('/', [SystemSettingController::class, 'update']);
     Route::get('/{key}', [SystemSettingController::class, 'show']);
+});
+
+// Reference items
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker,customer_service'])->prefix('reference-items')->group(function () {
+    Route::get('/', [ReferenceItemController::class, 'index']);
+});
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('reference-items')->group(function () {
+    Route::post('/', [ReferenceItemController::class, 'store']);
+    Route::put('/{id}', [ReferenceItemController::class, 'update']);
+    Route::delete('/{id}', [ReferenceItemController::class, 'destroy']);
+});
+
+// LLM access codes
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function () {
+    Route::get('/parks/{parkId}/access-codes', [LlmAccessCodeController::class, 'index']);
+    Route::post('/parks/{parkId}/access-codes', [LlmAccessCodeController::class, 'store']);
+    Route::put('/parks/{parkId}/access-codes/{id}', [LlmAccessCodeController::class, 'update']);
+    Route::delete('/parks/{parkId}/access-codes/{id}', [LlmAccessCodeController::class, 'destroy']);
+    Route::post('/parks/{parkId}/access-codes/sync', [LlmAccessCodeController::class, 'sync']);
 });
