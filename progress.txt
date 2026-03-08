@@ -230,3 +230,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Soft-delete for users = deactivate (active=false) + revoke tokens; don't call delete() on users
   - AuditLog::create() pattern reused across all controllers for audit trail
 ---
+
+## 2026-03-08 - US-018
+- Created ParkController with full CRUD (index, store, update, destroy)
+- Logo upload via POST /{id}/logo using Storage::disk('s3') with fake in tests
+- Settings endpoints: GET /{id}/settings (park + system_settings), PUT /{id}/settings (park field overrides)
+- Routes at /api/parks with role:admin,main_manager middleware
+- All mutations logged to audit_logs
+- 13 new tests pass, 49 total passing
+- Files changed: ParkController.php, routes/api.php, tests/Feature/Park/ParkTest.php
+- **Learnings for future iterations:**
+  - main_manager has implicit access to ALL parks (admin/main_manager bypass ParkScopeMiddleware)
+  - GD extension not installed on this PHP — use UploadedFile::fake()->create('name', size, mime) not ->image()
+  - Storage::fake('s3') works for testing S3 uploads without real S3 credentials
+  - Route middleware `role:admin,main_manager` allows both roles (comma-separated in RoleMiddleware)
+---
