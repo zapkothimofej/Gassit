@@ -397,3 +397,20 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - PdfService is a plain class (not bound in container) — instantiate directly or inject via constructor
   - Template priority: `orderByRaw('park_id IS NULL ASC')` returns park-specific before global
 ---
+
+## 2026-03-08 - US-028
+- Created InvoiceController: GET/POST /api/invoices, POST /api/invoices/generate-monthly, GET /{id}/pdf, POST /{id}/send, POST /{id}/cancel, GET /api/invoices/datev-export
+- Created GenerateMonthlyInvoices job (ShouldQueue): iterates active contracts, applies discount rules, creates draft invoices with rent/discount/insurance line items
+- Added migration to extend invoice_items.item_type enum with 'credit_note' value
+- Invoice number format: {PARK_CODE}-{YEAR}-{SEQ:0004} — code derived from first 4 alpha chars of park name
+- DATEV export returns EXTF CSV format with header rows + one line per invoice
+- Cancel: sets status=cancelled + creates credit_note InvoiceItem (negative total)
+- Send: generates PDF via PdfService if missing, creates SentEmail record (queued), sets status=sent
+- 13 new tests pass, 199 total passing
+- Files changed: InvoiceController.php, GenerateMonthlyInvoices.php, routes/api.php, 2026_03_08_000001_add_credit_note_to_invoice_items_type.php, tests/Feature/Invoice/InvoiceTest.php
+- **Learnings for future iterations:**
+  - DB::transaction closure variables need explicit `use ($var)` — PHP doesn't capture outer scope automatically
+  - DATEV EXTF format: first 2 rows are headers (EXTF identifier + column names), data rows follow
+  - ALTER TABLE to modify ENUM: `DB::statement("ALTER TABLE t MODIFY COLUMN col ENUM(...)")` — works in MariaDB
+  - Invoice number uniqueness: query `LIKE 'PREFIX-%'` then parse + increment sequence
+---
