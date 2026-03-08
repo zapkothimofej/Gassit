@@ -560,3 +560,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - sync route POST /parks/{parkId}/access-codes/sync must be declared BEFORE PUT/DELETE /{id} to avoid conflicts (it is in a separate group so no conflict here)
   - ReferenceItem deactivate = set active=false (no soft deletes column in schema)
 ---
+
+## 2026-03-08 - US-038
+- Created NotificationController: GET /api/notifications (paginated, read/unread filter), POST /{id}/read, POST /read-all, GET /unread-count
+- Created SearchController: GET /api/search?q=&park_id= — searches customers (name/email), units (number), applications (customer name), contracts (id), invoices (number); top 5 per category
+- Park access validated in search via ParkScopeMiddleware::hasAccessToPark helper
+- unread-count and read-all routes registered BEFORE /{id}/read to avoid route conflicts
+- 13 new tests pass, 345 total passing
+- Files changed: NotificationController.php, SearchController.php, routes/api.php, tests/Feature/Notification/NotificationTest.php
+- **Learnings for future iterations:**
+  - Route ordering matters: /unread-count and /read-all must come before /{id}/read in prefix group
+  - Contracts have no direct park_id — filter via whereHas('unit', fn($q)=>$q->where('park_id', ...))
+  - ParkScopeMiddleware::hasAccessToPark() is a public static helper reusable in controllers for manual park access checks
+---
