@@ -544,3 +544,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Clone pattern: max(version) + 1 scoped to document_type (and park_id if applicable)
   - DocumentTemplate has no soft deletes — omit DELETE endpoint per PRD
 ---
+
+## 2026-03-08 - US-037
+- Created ReferenceItemController: GET/POST/PUT/DELETE /api/reference-items
+- GET open to all authenticated roles; POST/PUT/DELETE restricted to admin
+- DELETE is soft-deactivate (sets active=false), not hard delete
+- Created LlmAccessCodeController: GET/POST/PUT/DELETE /api/parks/{parkId}/access-codes + POST sync
+- Sync endpoint finds active codes with valid_from <= today and (valid_to IS NULL OR valid_to >= today)
+- Sync is a stub adapter (returns codes as JSON; real implementation would call lock system REST API)
+- All mutations logged to audit_logs
+- 14 new tests pass, 332 total passing
+- Files changed: ReferenceItemController.php, LlmAccessCodeController.php, routes/api.php, tests/Feature/Reference/ReferenceItemTest.php
+- **Learnings for future iterations:**
+  - LlmAccessCode uses direct delete (no soft deletes on access codes table)
+  - sync route POST /parks/{parkId}/access-codes/sync must be declared BEFORE PUT/DELETE /{id} to avoid conflicts (it is in a separate group so no conflict here)
+  - ReferenceItem deactivate = set active=false (no soft deletes column in schema)
+---
