@@ -432,3 +432,20 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - RetryPayment job delay: use ->delay(now()->addHours(24)) in dispatch call
   - Payment factory needs explicit status field since 'pending' is the DB default but factory should be explicit
 ---
+
+## 2026-03-08 - US-030
+- Created migration: add `dunning_paused_until` timestamp to customers table
+- Created `ProcessDunning` artisan command: daily scheduler, finds overdue invoices, escalates dunning level based on system_settings delays (dunning_delay_1/2/3)
+- Registered command in routes/console.php via `Schedule::command(ProcessDunning::class)->daily()`
+- Created `DunningController`: GET /api/debtors (filter by park_id), POST /{id}/pause (30 days), POST /{id}/escalate (manual), POST /{id}/resolve (mark paid, reset customer)
+- Added `invoices()` HasMany to Customer model + `dunning_paused_until` to fillable/casts
+- Fee amounts hardcoded by level: 1=5.00, 2=10.00, 3=30.00 EUR
+- Routes guarded by role:admin,main_manager,accountant
+- 13 new tests pass, 225 total passing
+- Files changed: ProcessDunning.php, DunningController.php, Customer.php, 2026_03_08_000003_add_dunning_pause_to_customers.php, routes/api.php, routes/console.php, tests/Feature/Dunning/DunningTest.php
+- **Learnings for future iterations:**
+  - Carbon `now()->diffInDays($pastDate)` returns NEGATIVE — always use `Carbon::parse($past)->diffInDays(now())` for "days ago"
+  - Artisan commands auto-discovered from app/Console/Commands/ in Laravel 12 (no explicit registration needed)
+  - Schedule registration in routes/console.php via `Schedule::command(ClassName::class)->daily()`
+  - `Collection::min('due_date')` returns Carbon instance from date-casted field; parse with Carbon::parse() for safety
+---
