@@ -661,3 +661,17 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - TwoFactorView receives temp_token via route query param (set by LoginView on requires_2fa response)
   - auth.token is a ref — directly assignable from outside the store (e.g. in 2FA view)
 ---
+
+## 2026-03-08 - US-045
+- Created frontend/src/api/dashboard.ts with typed fetch functions for all dashboard data
+- Rewrote DashboardView.vue with 12 KPI cards, Mahnstuffe table, Umsatz table, Neue Facturas table, mini-Kanban (3 cols), 14-day calendar widget
+- Park selector in header filters all widgets via watch()
+- Loading skeleton grid shown during fetch (shimmer animation)
+- All data fetched in parallel via Promise.allSettled (graceful degradation on API errors)
+- vue-tsc --noEmit typecheck passes
+- Files changed: DashboardView.vue, api/dashboard.ts
+- **Learnings for future iterations:**
+  - Promise.allSettled for dashboard: each widget fails independently without breaking others
+  - Tasks dashboard API returns {todo: [], in_progress: [], done: []} — not a standard paginated response
+  - Calendar tasks are fetched from /tasks/calendar with from/to date params
+---
