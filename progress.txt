@@ -588,3 +588,17 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - DunningRecord joins park via invoice.park_id (no direct park_id column)
   - Cache::remember($key, 30, fn) — second arg is seconds (TTL)
 ---
+
+## 2026-03-08 - US-040
+- Created RevenueTargetController: GET/POST /api/parks/{parkId}/revenue-targets, PUT /api/revenue-targets/{id}, GET /actual
+- GET index: lists monthly targets for a year (defaults to current year)
+- POST store: upsert (updateOrCreate) by park_id+year+month combination
+- PUT update: updates target_amount only
+- GET actual: sums paid invoices for park/year/month from invoices.created_at
+- Routes guarded by role:admin,main_manager,accountant
+- 13 new tests pass, 378 total passing
+- Files changed: RevenueTargetController.php, routes/api.php, tests/Feature/RevenueTarget/RevenueTargetTest.php
+- **Learnings for future iterations:**
+  - updateOrCreate pattern for upsert on composite natural key (park_id+year+month)
+  - actual revenue: filter invoices by status='paid' + whereYear/whereMonth on created_at
+---
