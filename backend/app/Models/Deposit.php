@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Deposit extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'contract_id', 'customer_id', 'park_id', 'amount', 'status',
         'received_at', 'returned_at', 'return_amount', 'deduction_amount',
