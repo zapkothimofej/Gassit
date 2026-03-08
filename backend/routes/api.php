@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\ParkController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -19,6 +20,16 @@ Route::prefix('auth')->group(function () {
         Route::post('/2fa/enable', [TwoFactorController::class, 'enable']);
         Route::post('/2fa/disable', [TwoFactorController::class, 'disable']);
     });
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks')->group(function () {
+    Route::get('/', [ParkController::class, 'index']);
+    Route::post('/', [ParkController::class, 'store']);
+    Route::put('/{id}', [ParkController::class, 'update']);
+    Route::delete('/{id}', [ParkController::class, 'destroy']);
+    Route::post('/{id}/logo', [ParkController::class, 'uploadLogo']);
+    Route::get('/{id}/settings', [ParkController::class, 'getSettings']);
+    Route::put('/{id}/settings', [ParkController::class, 'updateSettings']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
