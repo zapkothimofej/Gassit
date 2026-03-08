@@ -26,6 +26,8 @@ use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\ReferenceItemController;
 use App\Http\Controllers\LlmAccessCodeController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -310,4 +312,17 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function (
     Route::put('/parks/{parkId}/access-codes/{id}', [LlmAccessCodeController::class, 'update']);
     Route::delete('/parks/{parkId}/access-codes/{id}', [LlmAccessCodeController::class, 'destroy']);
     Route::post('/parks/{parkId}/access-codes/sync', [LlmAccessCodeController::class, 'sync']);
+});
+
+// Notifications
+Route::middleware(['auth:sanctum'])->prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);
+    Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/read-all', [NotificationController::class, 'markAllRead']);
+    Route::post('/{id}/read', [NotificationController::class, 'markRead']);
+});
+
+// Global search
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/search', [SearchController::class, 'search']);
 });
