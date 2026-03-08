@@ -614,3 +614,21 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - AuditLog `created_at` is NOT in $fillable — use `forceFill(['created_at' => ...])->save()` in tests to set explicit timestamps
   - export route GET /audit-logs/export must be declared BEFORE GET /audit-logs/{id} to avoid route conflict
 ---
+
+## 2026-03-08 - US-042
+- Initialized Vue 3 + Vite + TypeScript + Pinia + Vue Router 4 project in /frontend
+- Axios instance: base URL from VITE_API_BASE_URL, auto-attach Bearer token from localStorage, 401→logout redirect
+- Auth Pinia store: login/logout, user/role/parks computed, token persisted in localStorage
+- Router: beforeEach guard with `roles` meta field, redirects to /login or /403
+- AppLayout.vue: sidebar + top bar wrapper with RouterView
+- AppSidebar.vue: all 17 menu items with role-based visibility
+- AppTopBar.vue: park selector dropdown, notification bell with unread count badge, user avatar/name, logout button
+- 17 stub views created for all routes
+- vue-tsc --noEmit typecheck passes
+- Files: frontend/src/{main.ts, App.vue, api/axios.ts, stores/auth.ts, stores/notifications.ts, router/index.ts, layouts/AppLayout.vue, components/{AppSidebar,AppTopBar}.vue, views/...}
+- **Learnings for future iterations:**
+  - Frontend lives in /frontend (Vite + Vue 3 + TS)
+  - Typecheck: `npx vue-tsc --noEmit` (no "type-check" npm script by default in Vite scaffold)
+  - useAuthStore() can be called inside axios interceptors (after pinia is created in main.ts)
+  - Park selector in TopBar uses auth.parks — populated after login/fetchUser
+---
