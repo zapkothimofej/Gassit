@@ -12,6 +12,11 @@ class Unit extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+
     protected $fillable = [
         'park_id',
         'unit_type_id',

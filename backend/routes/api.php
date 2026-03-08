@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ParkController;
+use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UnitTypeController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,20 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('unit-typ
     Route::post('/{id}/floor-plan', [UnitTypeController::class, 'uploadFloorPlan']);
     Route::post('/{id}/features', [UnitTypeController::class, 'syncFeatures']);
     Route::get('/{id}/availability', [UnitTypeController::class, 'availability']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('parks/{parkId}/units')->group(function () {
+    Route::get('/', [UnitController::class, 'index']);
+    Route::post('/', [UnitController::class, 'store']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('units')->group(function () {
+    Route::put('/{id}', [UnitController::class, 'update']);
+    Route::delete('/{id}', [UnitController::class, 'destroy']);
+    Route::put('/{id}/status', [UnitController::class, 'updateStatus']);
+    Route::post('/{id}/photos', [UnitController::class, 'uploadPhoto']);
+    Route::delete('/{id}/photos/{photoId}', [UnitController::class, 'deletePhoto']);
+    Route::get('/{id}/history', [UnitController::class, 'history']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
