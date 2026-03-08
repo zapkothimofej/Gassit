@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\DiscountRuleController;
+use App\Http\Controllers\InsuranceOptionController;
 use App\Http\Controllers\ParkController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UnitTypeController;
@@ -59,6 +61,25 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->p
     Route::post('/{id}/photos', [UnitController::class, 'uploadPhoto']);
     Route::delete('/{id}/photos/{photoId}', [UnitController::class, 'deletePhoto']);
     Route::get('/{id}/history', [UnitController::class, 'history']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks/{parkId}/discount-rules')->group(function () {
+    Route::get('/', [DiscountRuleController::class, 'index']);
+    Route::post('/', [DiscountRuleController::class, 'store']);
+    Route::put('/{id}', [DiscountRuleController::class, 'update']);
+    Route::delete('/{id}', [DiscountRuleController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks/{parkId}/insurance-options')->group(function () {
+    Route::get('/', [InsuranceOptionController::class, 'index']);
+    Route::post('/', [InsuranceOptionController::class, 'store']);
+    Route::put('/{id}', [InsuranceOptionController::class, 'update']);
+    Route::delete('/{id}', [InsuranceOptionController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('unit-types/{id}')->group(function () {
+    Route::get('/discount-rules', [DiscountRuleController::class, 'forUnitType']);
+    Route::get('/insurance-options', [InsuranceOptionController::class, 'forUnitType']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
