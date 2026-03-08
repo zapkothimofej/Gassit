@@ -28,6 +28,7 @@ use App\Http\Controllers\ReferenceItemController;
 use App\Http\Controllers\LlmAccessCodeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RevenueTargetController;
@@ -346,6 +347,13 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
 });
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('reports')->group(function () {
     Route::get('/audit', [ReportController::class, 'audit']);
+});
+
+// Audit logs (admin only)
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('audit-logs')->group(function () {
+    Route::get('/', [AuditLogController::class, 'index']);
+    Route::get('/export', [AuditLogController::class, 'export']);
+    Route::get('/{id}', [AuditLogController::class, 'show']);
 });
 
 // Revenue targets
