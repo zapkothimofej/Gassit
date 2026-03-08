@@ -89,6 +89,12 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin', 'main_manager', 'rental_manager', 'office_worker', 'customer_service'] },
       },
       {
+        path: 'customers/:id',
+        name: 'CustomerDetail',
+        component: () => import('../views/CustomerDetailView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'rental_manager', 'office_worker', 'customer_service'] },
+      },
+      {
         path: 'invoices',
         name: 'Invoices',
         component: () => import('../views/InvoicesView.vue'),
