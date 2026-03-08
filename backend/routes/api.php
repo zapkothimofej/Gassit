@@ -14,6 +14,7 @@ use App\Http\Controllers\UnitTypeController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -162,7 +163,17 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
     Route::get('/invoices/{id}/pdf', [InvoiceController::class, 'pdf']);
     Route::post('/invoices/{id}/send', [InvoiceController::class, 'send']);
     Route::post('/invoices/{id}/cancel', [InvoiceController::class, 'cancel']);
+    Route::post('/invoices/{id}/payment-link', [PaymentController::class, 'createPaymentLink']);
 });
+
+// Payments
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant'])->group(function () {
+    Route::get('/payments', [PaymentController::class, 'index']);
+    Route::post('/payments/{id}/refund', [PaymentController::class, 'refund']);
+});
+
+// Mollie webhook (public — verified by Mollie signature in production)
+Route::post('/webhooks/mollie', [PaymentController::class, 'mollieWebhook']);
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
