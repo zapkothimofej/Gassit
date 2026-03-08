@@ -15,6 +15,24 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
+    path: '/login/2fa',
+    name: 'TwoFactor',
+    component: () => import('../views/TwoFactorView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/password-reset',
+    name: 'PasswordReset',
+    component: () => import('../views/PasswordResetView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/password-reset/:token',
+    name: 'PasswordResetConfirm',
+    component: () => import('../views/PasswordResetConfirmView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     component: () => import('../layouts/AppLayout.vue'),
     children: [

@@ -16,10 +16,14 @@ async function submit() {
   error.value = ''
   loading.value = true
   try {
-    await auth.login(email.value, password.value)
+    const result = await auth.login(email.value, password.value)
+    if (result?.requires_2fa) {
+      router.push({ name: 'TwoFactor', query: { temp_token: result.temp_token } })
+      return
+    }
     const redirect = (route.query.redirect as string) || '/dashboard'
     router.push(redirect)
-  } catch (e: unknown) {
+  } catch {
     error.value = 'Invalid credentials'
   } finally {
     loading.value = false
@@ -37,6 +41,7 @@ async function submit() {
       <button type="submit" :disabled="loading">
         {{ loading ? 'Signing in…' : 'Sign in' }}
       </button>
+      <a href="/password-reset" class="forgot-link">Forgot password?</a>
     </form>
   </div>
 </template>
@@ -94,5 +99,12 @@ button:disabled {
   color: #ef4444;
   font-size: 0.85rem;
   margin: 0;
+}
+
+.forgot-link {
+  font-size: 0.8rem;
+  color: #3b82f6;
+  text-align: center;
+  text-decoration: none;
 }
 </style>
