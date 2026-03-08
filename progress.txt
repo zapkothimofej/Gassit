@@ -295,3 +295,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - forUnitType query: filter by park_id AND (unit_type_id IS NULL OR unit_type_id = X) AND active = true
   - New test directories (e.g. tests/Feature/Pricing/) work without additional config
 ---
+
+## 2026-03-08 - US-022
+- Created CustomerController: GET/POST/PUT/DELETE /api/customers, document upload/list/delete, GDPR anonymize, blacklist add/remove, blacklist index
+- Added contracts() and applications() HasMany to Customer model
+- Added $table = 'blacklist' to Blacklist model (Eloquent pluralizes to 'blacklists' by default)
+- Added HasFactory + CustomerDocumentFactory for test support
+- Park filter uses applications.park_id (contracts have no direct park_id)
+- GDPR delete sets phone='DELETED' (column is non-nullable in DB)
+- 16 new tests pass, 110 total passing
+- Files changed: CustomerController.php, Customer.php, Blacklist.php, CustomerDocument.php, CustomerDocumentFactory.php, routes/api.php, tests/Feature/Customer/CustomerTest.php
+- **Learnings for future iterations:**
+  - `Blacklist` model requires `protected $table = 'blacklist'` — Eloquent auto-pluralizes to 'blacklists'
+  - customers table: `phone` column is NOT NULL with no default — always provide it in create requests
+  - Contracts table has no direct park_id; use applications (has park_id) for park-based customer filtering
+  - GET /api/customers/blacklist must be registered BEFORE GET /api/customers/{id} to avoid route conflicts
+---
