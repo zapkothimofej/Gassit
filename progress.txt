@@ -573,3 +573,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Contracts have no direct park_id — filter via whereHas('unit', fn($q)=>$q->where('park_id', ...))
   - ParkScopeMiddleware::hasAccessToPark() is a public static helper reusable in controllers for manual park access checks
 ---
+
+## 2026-03-08 - US-039
+- Created DashboardController: GET /api/dashboard/kpis (cached 30s), GET /api/dashboard/mahnstuffe, GET /api/dashboard/revenue
+- Created ReportController: GET /api/reports/applications|customers|units|finance (json|xlsx), GET /api/reports/audit (admin only)
+- Installed phpoffice/phpspreadsheet ^5.5 for xlsx export (with --ignore-platform-req=ext-gd since GD not installed)
+- Used Coordinate::stringFromColumnIndex() for cell addressing (setCellValueByColumnAndRow removed in v2+)
+- DunningRecord has no park_id — filter via whereHas('invoice', fn => where('park_id', ...))
+- 20 new tests pass, 365 total passing
+- Files changed: DashboardController.php, ReportController.php, routes/api.php, tests/Feature/Dashboard/DashboardTest.php, composer.json, composer.lock
+- **Learnings for future iterations:**
+  - phpspreadsheet v5: use Coordinate::stringFromColumnIndex($col+1) + setCellValue($col.$row, $val) — setCellValueByColumnAndRow() is gone
+  - Install phpspreadsheet with --ignore-platform-req=ext-gd (GD not installed on this PHP)
+  - DunningRecord joins park via invoice.park_id (no direct park_id column)
+  - Cache::remember($key, 30, fn) — second arg is seconds (TTL)
+---
