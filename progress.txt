@@ -709,3 +709,10 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Added /waiting-list route to router
 - vue-tsc --noEmit typecheck passes
 ---
+
+## 2026-03-08 - US-049
+- Created frontend/src/api/customers.ts with fetchCustomers, createCustomer, exportCustomers
+- Created CustomersView.vue: AppTable, filters (park/status/type/search), export xlsx, CreateCustomerModal with type toggle (private/company), address fields, GDPR checkbox
+- Added /customers and /customers/:id routes to router; created CustomerDetailView.vue stub
+- vue-tsc --noEmit typecheck passes
+---
