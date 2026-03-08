@@ -497,3 +497,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - vendor_invoices.amount is cast as decimal:2 — JSON returns "500.00" string (assert with string)
   - Park filter on vendors uses direct `park_id` column (not relation join needed)
 ---
+
+## 2026-03-08 - US-034
+- Created TaskController with full CRUD at /api/tasks
+- Status transitions enforced: todo→in_progress→done (sets completed_at); todo/in_progress→cancelled
+- POST /api/tasks/{id}/assign: changes assigned_to and sends in-app Notification
+- GET /api/tasks/dashboard: Kanban structure (todo/in_progress groups); park_worker only sees own tasks
+- GET /api/tasks/calendar: tasks with due_date, filterable by park/from/to
+- park_worker role restricted to own tasks in index and dashboard
+- Added HasFactory to Task model + TaskFactory
+- 14 new tests pass, 282 total passing
+- Files changed: TaskController.php, Task.php, TaskFactory.php, routes/api.php, tests/Feature/Task/TaskTest.php
+- **Learnings for future iterations:**
+  - dashboard and calendar routes must be declared BEFORE /{id} routes in the route group to avoid route conflicts
+  - park_worker role filtering is done in controller (not middleware) since filter depends on role value
+  - Notification model is in App\Models (custom, not Laravel's built-in) — use directly without namespace conflict
+---
