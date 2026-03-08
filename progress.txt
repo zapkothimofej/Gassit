@@ -449,3 +449,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Schedule registration in routes/console.php via `Schedule::command(ClassName::class)->daily()`
   - `Collection::min('due_date')` returns Carbon instance from date-casted field; parse with Carbon::parse() for safety
 ---
+
+## 2026-03-08 - US-031
+- Created DamageReportController: GET/POST/PUT/DELETE /api/damage-reports, status transitions, photo upload, assign-vendor, generate invoice
+- Status transitions enforced: reported→in_assessment→repair_ordered→in_repair→resolved→closed
+- Photos uploaded to S3 via Storage::disk('s3')
+- Assign vendor: updates assigned_vendor_id and logs SentEmail notification to vendor
+- Generate invoice: creates draft Invoice + InvoiceItem (item_type=damage) from contract's customer/park
+- Added HasFactory to DamageReport and Vendor models; created DamageReportFactory and VendorFactory
+- Routes guarded by role:admin,main_manager,rental_manager,park_worker
+- 14 new tests pass, 239 total passing
+- Files changed: DamageReportController.php, DamageReport.php (HasFactory), Vendor.php (HasFactory), DamageReportFactory.php, VendorFactory.php, routes/api.php, tests/Feature/DamageReport/DamageReportTest.php
+- **Learnings for future iterations:**
+  - Park filtering for damage reports: use whereHas('unit', fn($q)=>$q->where('park_id', ...)) since DamageReport has no direct park_id
+  - resolved_at should be set automatically when status transitions to 'resolved'
+  - Vendor model needs HasFactory for test support
+---
