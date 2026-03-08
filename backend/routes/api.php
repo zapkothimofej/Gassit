@@ -15,6 +15,7 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DunningController;
 use App\Http\Controllers\WaitingListController;
 use Illuminate\Support\Facades\Route;
@@ -188,6 +189,18 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/employees/{id}', [EmployeeController::class, 'show']);
     Route::put('/employees/{id}', [EmployeeController::class, 'update']);
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+});
+
+// Damage reports
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker'])->prefix('damage-reports')->group(function () {
+    Route::get('/', [DamageReportController::class, 'index']);
+    Route::post('/', [DamageReportController::class, 'store']);
+    Route::put('/{id}', [DamageReportController::class, 'update']);
+    Route::delete('/{id}', [DamageReportController::class, 'destroy']);
+    Route::post('/{id}/photos', [DamageReportController::class, 'uploadPhoto']);
+    Route::put('/{id}/status', [DamageReportController::class, 'updateStatus']);
+    Route::post('/{id}/assign-vendor', [DamageReportController::class, 'assignVendor']);
+    Route::post('/{id}/invoice', [DamageReportController::class, 'generateInvoice']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->prefix('debtors')->group(function () {
