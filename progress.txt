@@ -513,3 +513,20 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - park_worker role filtering is done in controller (not middleware) since filter depends on role value
   - Notification model is in App\Models (custom, not Laravel's built-in) — use directly without namespace conflict
 ---
+
+## 2026-03-08 - US-035
+- Created MailController: GET/POST/PUT/DELETE /api/mail-templates, POST /api/mail/preview, POST /api/mail/send, POST /api/mail/mass-send, POST /api/mail/schedule, GET /api/mail/sent
+- Created SendMailJob (ShouldQueue): marks SentEmail as sent (stub — real SMTP in production)
+- Added HasFactory + MailTemplateFactory and SentEmailFactory
+- Preview: substitutes {variable} placeholders in subject and body_html
+- Send: merges customer variables (customer_name, email, phone, address) with extra vars
+- Mass-send: filters customers by park/status/contract_status, creates queued SentEmail records, dispatches SendMailJob per recipient
+- Schedule: like mass-send but dispatches with delay($sendAt)
+- Routes guarded by role:admin,main_manager,office_worker
+- 17 new tests pass, 299 total passing
+- Files changed: MailController.php, SendMailJob.php, MailTemplate.php (HasFactory), SentEmail.php (HasFactory), MailTemplateFactory.php, SentEmailFactory.php, routes/api.php, tests/Feature/Mail/MailTest.php
+- **Learnings for future iterations:**
+  - Variable substitution: simple str_replace on {key} placeholders — no Blade/Twig needed
+  - SentEmailFactory needs explicit `sent_at` — column is nullable but factory should set it for status=sent
+  - Queue::assertPushed count is cumulative across all dispatches in the test
+---
