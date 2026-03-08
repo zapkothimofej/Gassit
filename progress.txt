@@ -414,3 +414,21 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - ALTER TABLE to modify ENUM: `DB::statement("ALTER TABLE t MODIFY COLUMN col ENUM(...)")` — works in MariaDB
   - Invoice number uniqueness: query `LIKE 'PREFIX-%'` then parse + increment sequence
 ---
+
+## 2026-03-08 - US-029
+- Created PaymentController: POST /api/invoices/{id}/payment-link, POST /api/webhooks/mollie, POST /api/payments/{id}/refund, GET /api/payments
+- Created RetryPayment job (ShouldQueue): retries failed Mollie payments up to payment_retry_max, dispatched with 24h delay
+- Added migration to add retry_count column to payments table
+- Added HasFactory to Payment model, created PaymentFactory
+- Payment link idempotency: returns existing pending payment if already created
+- Webhook idempotency: skips already-processed payments (paid/refunded/cancelled)
+- Retry limit: no job dispatched when retry_count >= payment_retry_max (from system_settings)
+- Invoice status updated to 'paid' when total paid payments >= invoice total_amount
+- 13 new tests pass, 212 total passing
+- Files changed: PaymentController.php, RetryPayment.php, Payment.php (HasFactory), PaymentFactory.php, 2026_03_08_000002_add_retry_count_to_payments_table.php, routes/api.php, tests/Feature/Payment/PaymentTest.php
+- **Learnings for future iterations:**
+  - Mollie webhook is public (no auth) — register outside auth:sanctum middleware group
+  - Idempotency on webhooks: check payment status before processing (skip if already paid/refunded/cancelled)
+  - RetryPayment job delay: use ->delay(now()->addHours(24)) in dispatch call
+  - Payment factory needs explicit status field since 'pending' is the DB default but factory should be explicit
+---
