@@ -344,3 +344,20 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Jobs directory must be created manually (app/Jobs/); no artisan scaffold needed
   - notified_at is in WaitingList $fillable — update via $entry->update(['notified_at' => now()])
 ---
+
+## 2026-03-08 - US-025
+- Created ContractController: generateFromApplication, index, show, update, sendForSignature, esignWebhook, activate, terminate, renew
+- POST /api/applications/{id}/contract: stubs PDF from document template, stores to S3, creates draft contract
+- POST /api/contracts/{id}/send-for-signature: e-sign stub, status→awaiting_signature
+- POST /api/webhooks/esign: signature webhook (public), stores signed PDF, status→signed, creates contract_signature record
+- POST /api/contracts/{id}/activate: status→active, unit→rented, creates deposit record (pending)
+- POST /api/contracts/{id}/terminate: validates termination_notice_date + notice_period_days, sets terminated_by_customer|terminated_by_lfg
+- POST /api/contracts/{id}/renew: creates new draft contract, links via contract_renewals, old→expired
+- 20 new tests pass, 162 total passing
+- Files changed: ContractController.php, routes/api.php, tests/Feature/Contract/ContractTest.php
+- **Learnings for future iterations:**
+  - Contracts have no direct park_id — get park_id from contract.unit.park_id for deposit creation
+  - Esign webhook is public (no auth) — register outside auth:sanctum middleware group
+  - notice_period_days validation: terminated_at (now) must be >= notice_date + notice_period_days
+  - Use notice_period_days=0 in tests to bypass notice period validation
+---
