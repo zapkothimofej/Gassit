@@ -379,3 +379,21 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Mollie payout idempotency: check mollie_payment_id before creating new payout
   - DepositFactory needs explicit park_id — Contract factory creates its own unit/customer so park may differ; always create deposit with matching park_id from contract.unit.park_id in real usage
 ---
+
+## 2026-03-08 - US-027
+- Created PdfService in `app/Services/PdfService.php` using dompdf/dompdf v3.x
+- generateContract(contract): loads contract+customer+unit+park, renders template or fallback HTML, stores to S3, updates signed_pdf_path
+- generateInvoice(invoice): loads invoice+customer+park+items, renders with line item table, stores to S3, updates pdf_path
+- generateDunningLetter(dunning_record): renders dunning letter for level 1-3, stores to S3, updates template_used
+- generateDepositReturn(deposit): renders deposit return doc, stores to S3, returns path
+- All methods use findTemplate() to prefer park-specific templates over global (park_id IS NULL)
+- Added HasFactory to Invoice and DunningRecord models
+- Created InvoiceFactory and DunningRecordFactory
+- 9 new tests pass, 186 total passing
+- Files changed: PdfService.php, Invoice.php, DunningRecord.php, InvoiceFactory.php, DunningRecordFactory.php, tests/Feature/Pdf/PdfServiceTest.php, composer.json, composer.lock
+- **Learnings for future iterations:**
+  - dompdf v3.x: use `new Options()` + `set()` then pass to `new Dompdf($options)` constructor
+  - `assertStringContainsString()` not `assertStringContains()` in PHPUnit
+  - PdfService is a plain class (not bound in container) — instantiate directly or inject via constructor
+  - Template priority: `orderByRaw('park_id IS NULL ASC')` returns park-specific before global
+---
