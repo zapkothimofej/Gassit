@@ -1066,3 +1066,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Files changed: FinanceReportsView.vue (new), router/index.ts
 - Typecheck passes
 ---
+
+## 2026-03-09 - US-083
+- Updated ForbiddenView.vue: German "Kein Zugriff" with back-to-dashboard button
+- Created NotFoundView.vue: "Seite nicht gefunden" with back-to-dashboard button; added /404 route and /:pathMatch(.*)* catch-all redirect
+- Created stores/toast.ts: simple module-level toasts ref + showToast(message, type, duration) function
+- Updated axios.ts: global error interceptor - network errors show 'Verbindungsfehler...', 500+ errors show API message
+- Updated AppLayout.vue: renders global toasts via Teleport to body (success=green, error=red, info=blue)
+- Created AppSkeleton.vue: animated shimmer table rows (rows/cols props)
+- Created AppEmptyState.vue: icon + message + optional action slot
+- Files changed: ForbiddenView.vue, NotFoundView.vue (new), AppSkeleton.vue (new), AppEmptyState.vue (new), toast.ts (new), axios.ts, AppLayout.vue, router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - useToastStore() is NOT a Pinia store — it's a plain composable with module-level state (simpler for cross-component toasts)
+  - 404 catch-all must be last in routes array: path: '/:pathMatch(.*)*' redirects to /404
+  - Global axios error handler: use error.response?.status >= 500 (not just 500) to catch all server errors
+---
