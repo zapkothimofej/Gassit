@@ -961,3 +961,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Outside-click dropdown close: addEventListener('click', handler) on document in onMounted, remove in onUnmounted
   - @click.stop on the bell button prevents the document click handler from immediately closing the dropdown
 ---
+
+## 2026-03-09 - US-075
+- Implemented global search UI in AppTopBar.vue
+- Created `frontend/src/api/search.ts` with `globalSearch(q)` calling `/api/search?q=`
+- Added search input with Cmd/Ctrl+K shortcut, debounced API call (300ms), grouped results dropdown by category (Customers, Units, Applications, Contracts, Invoices), loading spinner, empty state, and click-to-navigate
+- Files changed: `frontend/src/api/search.ts`, `frontend/src/components/AppTopBar.vue`
+- **Learnings for future iterations:**
+  - Search uses mousedown.prevent on results to avoid blur-before-click issue
+  - Keyboard events (Ctrl+K, Escape) registered globally on document in onMounted/onUnmounted
+  - Vue-tsc typecheck: `cd frontend && npx vue-tsc --noEmit`
+---
