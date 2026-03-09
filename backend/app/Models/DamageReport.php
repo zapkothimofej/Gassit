@@ -22,12 +22,14 @@ class DamageReport extends Model
         'status',
         'assigned_vendor_id',
         'resolved_at',
+        'is_termination_inspection',
     ];
 
     protected $casts = [
-        'estimated_cost' => 'decimal:2',
-        'actual_cost' => 'decimal:2',
-        'resolved_at' => 'datetime',
+        'estimated_cost'            => 'decimal:2',
+        'actual_cost'               => 'decimal:2',
+        'resolved_at'               => 'datetime',
+        'is_termination_inspection' => 'boolean',
     ];
 
     public function unit(): BelongsTo

@@ -16,18 +16,19 @@ class Contract extends Model
         'application_id', 'customer_id', 'unit_id', 'start_date', 'end_date',
         'notice_period_days', 'rent_amount', 'deposit_amount', 'insurance_amount',
         'status', 'signed_pdf_path', 'signed_at', 'terminated_at',
-        'termination_reason_id', 'termination_notice_date',
+        'termination_reason_id', 'termination_notice_date', 'final_invoice_waived',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'signed_at' => 'datetime',
-        'terminated_at' => 'datetime',
+        'start_date'              => 'date',
+        'end_date'                => 'date',
+        'signed_at'               => 'datetime',
+        'terminated_at'           => 'datetime',
         'termination_notice_date' => 'date',
-        'rent_amount' => 'decimal:2',
-        'deposit_amount' => 'decimal:2',
-        'insurance_amount' => 'decimal:2',
+        'rent_amount'             => 'decimal:2',
+        'deposit_amount'          => 'decimal:2',
+        'insurance_amount'        => 'decimal:2',
+        'final_invoice_waived'    => 'boolean',
     ];
 
     public function application(): BelongsTo

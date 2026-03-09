@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Contract;
 use App\Models\Deposit;
+use App\Models\Invoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -68,6 +69,20 @@ class DepositController extends Controller
         $terminatedStatuses = ['terminated_by_customer', 'terminated_by_lfg'];
         if (!in_array($contract->status, $terminatedStatuses)) {
             return response()->json(['message' => 'Can only return deposit for terminated contracts.'], 422);
+        }
+
+        // Block deposit return if final invoice is unpaid and not waived
+        if (!$contract->final_invoice_waived) {
+            $unpaidFinalInvoice = Invoice::where('contract_id', $contract->id)
+                ->where('billing_month', 'like', '%-final')
+                ->whereNotIn('status', ['paid'])
+                ->first();
+            if ($unpaidFinalInvoice) {
+                return response()->json([
+                    'message'    => 'Cannot return deposit: final invoice is not yet paid.',
+                    'invoice_id' => $unpaidFinalInvoice->id,
+                ], 422);
+            }
         }
 
         $data = $request->validate([

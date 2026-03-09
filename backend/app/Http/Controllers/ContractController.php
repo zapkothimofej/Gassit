@@ -7,8 +7,12 @@ use App\Models\AuditLog;
 use App\Models\Contract;
 use App\Models\ContractRenewal;
 use App\Models\ContractSignature;
+use App\Models\DamageReport;
 use App\Models\Deposit;
 use App\Models\DocumentTemplate;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Park;
 use App\Models\Unit;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -261,7 +265,74 @@ class ContractController extends Controller
             'termination_reason_id'   => $data['termination_reason_id'] ?? null,
         ]);
 
-        // Queue final invoice generation (stub — log audit)
+        // Set unit to maintenance until inspection completes
+        $unit = $contract->unit;
+        if ($unit) {
+            $unit->update(['status' => 'maintenance']);
+        }
+
+        // Create pro-rated final invoice for current month
+        $today = $terminatedAt->copy()->startOfDay();
+        $daysInMonth = $today->daysInMonth;
+        $daysUsed = $today->day;
+        $dailyRate = round((float) $contract->rent_amount / $daysInMonth, 4);
+        $proratedRent = round($dailyRate * $daysUsed, 2);
+
+        $park = $unit?->park ?? Park::first();
+        if ($park) {
+            $billingMonth = $today->format('Y-m') . '-final';
+            $existing = Invoice::where('contract_id', $contract->id)
+                ->where('billing_month', $billingMonth)
+                ->first();
+
+            if (!$existing) {
+                $code   = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $park->name), 0, 4)) ?: 'PARK';
+                $year   = now()->year;
+                $prefix = $code . '-' . $year . '-';
+                $last   = Invoice::where('invoice_number', 'like', $prefix . '%')
+                    ->orderByDesc('invoice_number')->value('invoice_number');
+                $seq    = $last ? ((int) substr($last, strlen($prefix)) + 1) : 1;
+                $invoiceNumber = $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
+
+                $invoice = Invoice::create([
+                    'contract_id'    => $contract->id,
+                    'customer_id'    => $contract->customer_id,
+                    'park_id'        => $park->id,
+                    'invoice_number' => $invoiceNumber,
+                    'billing_month'  => $billingMonth,
+                    'issue_date'     => $today->format('Y-m-d'),
+                    'due_date'       => $today->addDays(14)->format('Y-m-d'),
+                    'subtotal'       => $proratedRent,
+                    'tax_rate'       => 0,
+                    'tax_amount'     => 0,
+                    'total_amount'   => $proratedRent,
+                    'status'         => 'draft',
+                ]);
+
+                InvoiceItem::create([
+                    'invoice_id'  => $invoice->id,
+                    'description' => "Final invoice (pro-rated {$daysUsed}/{$daysInMonth} days) - {$today->format('Y-m')}",
+                    'quantity'    => 1,
+                    'unit_price'  => $proratedRent,
+                    'total'       => $proratedRent,
+                    'item_type'   => 'rent',
+                    'sort_order'  => 0,
+                ]);
+            }
+        }
+
+        // Create termination inspection damage report
+        if ($unit) {
+            DamageReport::create([
+                'unit_id'                   => $unit->id,
+                'contract_id'               => $contract->id,
+                'reported_by'               => $request->user()->id,
+                'description'               => 'Termination inspection',
+                'status'                    => 'reported',
+                'is_termination_inspection' => true,
+            ]);
+        }
+
         $this->writeAuditLog($request, 'terminate', $contract, $old, [
             'status'       => $newStatus,
             'terminated_at' => $terminatedAt->toIso8601String(),

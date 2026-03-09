@@ -13,6 +13,7 @@ use App\Models\Park;
 use App\Models\SentEmail;
 use App\Models\Unit;
 use App\Models\Vendor;
+use App\Jobs\NotifyWaitingListEntries;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -165,6 +166,15 @@ class DamageReportController extends Controller
         }
 
         $report->update($update);
+
+        // When termination inspection is resolved, free the unit and notify waiting list
+        if ($newStatus === 'resolved' && $report->is_termination_inspection) {
+            $unit = $report->unit;
+            if ($unit) {
+                $unit->update(['status' => 'free']);
+                NotifyWaitingListEntries::dispatch($unit->id);
+            }
+        }
 
         AuditLog::create([
             'user_id'    => $request->user()->id,
