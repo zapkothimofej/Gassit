@@ -78,7 +78,7 @@ async function confirmStatusChange() {
   if (!pendingStatus.value || !unit.value) return
   savingStatus.value = true
   try {
-    const res = await api.patch(`/api/units/${unitId}`, { status: pendingStatus.value })
+    const res = await api.put(`/units/${unitId}/status`, { status: pendingStatus.value })
     unit.value = res.data.data ?? res.data
     pendingStatus.value = ''
   } finally {
@@ -108,7 +108,7 @@ function populateInfoForm(u: Unit) {
 async function saveInfo() {
   savingInfo.value = true
   try {
-    const res = await api.put(`/api/units/${unitId}`, {
+    const res = await api.put(`/units/${unitId}`, {
       unit_number: infoForm.unit_number,
       floor: infoForm.floor,
       building: infoForm.building || null,
@@ -132,7 +132,7 @@ const deletingPhoto = ref(false)
 async function loadPhotos() {
   loadingPhotos.value = true
   try {
-    const res = await api.get(`/api/units/${unitId}/photos`)
+    const res = await api.get(`/units/${unitId}/photos`)
     photos.value = res.data.data ?? res.data ?? []
   } finally {
     loadingPhotos.value = false
@@ -148,7 +148,7 @@ async function uploadPhotos(event: Event) {
   }
   uploadingPhotos.value = true
   try {
-    await api.post(`/api/units/${unitId}/photos`, formData, {
+    await api.post(`/units/${unitId}/photos`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     await loadPhotos()
@@ -162,7 +162,7 @@ async function confirmDeletePhoto() {
   if (!photoToDelete.value) return
   deletingPhoto.value = true
   try {
-    await api.delete(`/api/units/${unitId}/photos/${photoToDelete.value.id}`)
+    await api.delete(`/units/${unitId}/photos/${photoToDelete.value.id}`)
     photos.value = photos.value.filter((p) => p.id !== photoToDelete.value!.id)
     photoToDelete.value = null
   } finally {
@@ -178,7 +178,7 @@ const loadingContract = ref(false)
 async function loadActiveContract() {
   loadingContract.value = true
   try {
-    const res = await api.get(`/api/units/${unitId}/contracts`, { params: { status: 'active' } })
+    const res = await api.get(`/contracts`, { params: { unit_id: unitId, status: 'active', per_page: 5 } })
     const list: Contract[] = res.data.data ?? res.data ?? []
     activeContract.value = list[0] ?? null
   } finally {
@@ -194,7 +194,7 @@ const loadingHistory = ref(false)
 async function loadHistory() {
   loadingHistory.value = true
   try {
-    const res = await api.get(`/api/units/${unitId}/history`)
+    const res = await api.get(`/units/${unitId}/history`)
     history.value = res.data.data ?? res.data ?? []
   } finally {
     loadingHistory.value = false
@@ -218,7 +218,7 @@ const readingPhotoFile = ref<File | null>(null)
 async function loadMeters() {
   loadingMeters.value = true
   try {
-    const res = await api.get(`/api/units/${unitId}/meters`)
+    const res = await api.get(`/units/${unitId}/meters`)
     const list: Meter[] = (res.data.data ?? res.data ?? []).map((m: Meter) => ({ ...m, readings: [], loadingReadings: false }))
     meters.value = list
     await Promise.all(list.map((m) => loadReadings(m)))
@@ -230,7 +230,7 @@ async function loadMeters() {
 async function loadReadings(meter: Meter) {
   meter.loadingReadings = true
   try {
-    const res = await api.get(`/api/meters/${meter.id}/readings`)
+    const res = await api.get(`/meters/${meter.id}/readings`)
     meter.readings = res.data.data ?? res.data ?? []
   } finally {
     meter.loadingReadings = false
@@ -241,7 +241,7 @@ async function addMeter() {
   if (!newMeterSerial.value) return
   addingMeter.value = true
   try {
-    await api.post(`/api/units/${unitId}/meters`, { serial_number: newMeterSerial.value })
+    await api.post(`/units/${unitId}/meters`, { serial_number: newMeterSerial.value })
     showAddMeterModal.value = false
     newMeterSerial.value = ''
     await loadMeters()
@@ -266,7 +266,7 @@ async function addReading() {
     formData.append('reading_date', readingForm.reading_date)
     formData.append('meter_value', readingForm.meter_value)
     if (readingPhotoFile.value) formData.append('photo', readingPhotoFile.value)
-    await api.post(`/api/meters/${selectedMeterId.value}/readings`, formData, {
+    await api.post(`/meters/${selectedMeterId.value}/readings`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     showAddReadingModal.value = false
@@ -311,7 +311,7 @@ async function switchTab(tab: typeof activeTab.value) {
 
 onMounted(async () => {
   try {
-    const res = await api.get(`/api/units/${unitId}`)
+    const res = await api.get(`/units/${unitId}`)
     unit.value = res.data.data ?? res.data
     if (unit.value) populateInfoForm(unit.value)
   } finally {

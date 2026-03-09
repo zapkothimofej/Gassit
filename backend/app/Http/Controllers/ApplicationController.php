@@ -52,6 +52,12 @@ class ApplicationController extends Controller
         return response()->json($query->paginate(20));
     }
 
+    public function show(int $id): JsonResponse
+    {
+        $application = Application::with(['customer', 'park', 'unitType', 'unit', 'assignedTo'])->findOrFail($id);
+        return response()->json($application);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([

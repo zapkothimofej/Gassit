@@ -83,6 +83,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->p
 });
 
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('units')->group(function () {
+    Route::get('/{id}', [UnitController::class, 'show']);
     Route::put('/{id}', [UnitController::class, 'update']);
     Route::delete('/{id}', [UnitController::class, 'destroy']);
     Route::put('/{id}/status', [UnitController::class, 'updateStatus']);
@@ -127,6 +128,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
 
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('applications')->group(function () {
     Route::get('/', [ApplicationController::class, 'index']);
+    Route::get('/{id}', [ApplicationController::class, 'show']);
     Route::post('/', [ApplicationController::class, 'store']);
     Route::put('/{id}', [ApplicationController::class, 'update']);
     Route::delete('/{id}', [ApplicationController::class, 'destroy']);
@@ -215,6 +217,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 // Damage reports
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker'])->prefix('damage-reports')->group(function () {
     Route::get('/', [DamageReportController::class, 'index']);
+    Route::get('/{id}', [DamageReportController::class, 'show']);
     Route::post('/', [DamageReportController::class, 'store']);
     Route::put('/{id}', [DamageReportController::class, 'update']);
     Route::delete('/{id}', [DamageReportController::class, 'destroy']);

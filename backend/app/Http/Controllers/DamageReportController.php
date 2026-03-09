@@ -49,6 +49,12 @@ class DamageReportController extends Controller
         return response()->json($query->orderByDesc('created_at')->paginate(20));
     }
 
+    public function show(int $id): JsonResponse
+    {
+        $report = DamageReport::with(['unit', 'reportedBy', 'assignedVendor', 'photos', 'contract'])->findOrFail($id);
+        return response()->json($report);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([

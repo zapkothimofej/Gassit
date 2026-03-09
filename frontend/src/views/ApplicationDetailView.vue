@@ -105,7 +105,7 @@ async function submitAssign() {
   if (!assignUserId.value) return
   actionLoading.value = 'assign'
   try {
-    await api.post('/applications/' + id + '/assign', { assigned_to_id: assignUserId.value })
+    await api.post('/applications/' + id + '/assign', { user_id: assignUserId.value })
     showAssignModal.value = false
     await load()
   } finally {

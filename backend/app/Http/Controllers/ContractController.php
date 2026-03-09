@@ -93,6 +93,10 @@ class ContractController extends Controller
             $query->whereHas('unit', fn ($q) => $q->where('park_id', $parkId));
         }
 
+        if ($request->filled('unit_id')) {
+            $query->where('unit_id', (int) $request->query('unit_id'));
+        }
+
         return response()->json($query->paginate(20));
     }
 

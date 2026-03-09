@@ -70,6 +70,12 @@ class UnitController extends Controller
         return response()->json($unit->load('unitType'), 201);
     }
 
+    public function show(int $id): JsonResponse
+    {
+        $unit = Unit::with(['park', 'unitType', 'photos'])->findOrFail($id);
+        return response()->json($unit);
+    }
+
     public function update(Request $request, int $id): JsonResponse
     {
         $unit = Unit::findOrFail($id);
