@@ -48,6 +48,9 @@ class MailController extends Controller
         ]);
 
         $data['active'] = $data['active'] ?? true;
+        if (isset($data['body_html'])) {
+            $data['body_html'] = $this->sanitizeHtml($data['body_html']);
+        }
         $template = MailTemplate::create($data);
 
         AuditLog::create([
@@ -78,6 +81,9 @@ class MailController extends Controller
         ]);
 
         $old = $template->toArray();
+        if (isset($data['body_html'])) {
+            $data['body_html'] = $this->sanitizeHtml($data['body_html']);
+        }
         $template->update($data);
 
         AuditLog::create([
@@ -310,6 +316,12 @@ class MailController extends Controller
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private function sanitizeHtml(string $html): string
+    {
+        $allowed = '<a><b><strong><i><em><u><s><br><p><div><span><ul><ol><li><h1><h2><h3><h4><table><thead><tbody><tr><th><td><img>';
+        return strip_tags($html, $allowed);
+    }
 
     private function substitute(string $text, array $variables): string
     {

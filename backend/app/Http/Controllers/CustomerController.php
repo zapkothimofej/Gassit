@@ -114,7 +114,7 @@ class CustomerController extends Controller
         $customer = Customer::findOrFail($id);
 
         $request->validate([
-            'document'      => ['required', 'file', 'mimes:pdf,jpeg,jpg,png,doc,docx', 'max:20480'],
+            'document'      => ['required', 'file', 'mimes:pdf,jpeg,jpg,png', 'max:10240'],
             'document_type' => ['required', 'string', 'max:100'],
         ]);
 

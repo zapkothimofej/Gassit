@@ -125,12 +125,12 @@ class DamageReportController extends Controller
         $report = DamageReport::findOrFail($id);
 
         $request->validate([
-            'photo'    => ['required', 'file', 'mimes:jpg,jpeg,png,webp'],
+            'photo'    => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'caption'  => ['nullable', 'string'],
             'taken_at' => ['nullable', 'date'],
         ]);
 
-        $path = Storage::disk('s3')->put("damage-photos/{$id}", $request->file('photo'));
+        $path = Storage::disk('s3')->putFile("damage-photos/{$id}", $request->file('photo'));
 
         $photo = DamagePhoto::create([
             'damage_report_id' => $report->id,
