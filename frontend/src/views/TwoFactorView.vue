@@ -1,24 +1,29 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api/axios'
 
 const router = useRouter()
-const route = useRoute()
 const auth = useAuthStore()
 
 const code = ref('')
 const error = ref('')
 const loading = ref(false)
 
-const tempToken = route.query.temp_token as string
-
 async function submit() {
   if (code.value.length !== 6) {
     error.value = 'Please enter 6-digit code'
     return
   }
+
+  const tempToken = sessionStorage.getItem('temp_2fa_token')
+  if (!tempToken) {
+    error.value = 'Session expired. Please log in again.'
+    router.push('/login')
+    return
+  }
+
   error.value = ''
   loading.value = true
   try {
@@ -26,8 +31,9 @@ async function submit() {
       temp_token: tempToken,
       code: code.value,
     })
-    auth.token = response.data.token
-    localStorage.setItem('auth_token', response.data.token)
+    sessionStorage.removeItem('temp_2fa_token')
+    auth.token = response.data.access_token
+    sessionStorage.setItem('auth_token', response.data.access_token)
     auth.user = response.data.user
     router.push('/dashboard')
   } catch {

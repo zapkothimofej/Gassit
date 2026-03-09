@@ -18,7 +18,8 @@ async function submit() {
   try {
     const result = await auth.login(email.value, password.value)
     if (result?.requires_2fa) {
-      router.push({ name: 'TwoFactor', query: { temp_token: result.temp_token } })
+      sessionStorage.setItem('temp_2fa_token', result.temp_token)
+      router.push({ name: 'TwoFactor' })
       return
     }
     const redirect = (route.query.redirect as string) || '/dashboard'

@@ -84,6 +84,41 @@ class PaymentTest extends TestCase
         $response->assertStatus(422);
     }
 
+    // --- WEBHOOK HELPERS ---
+
+    private function mollieSignedRequest(array $payload): \Illuminate\Testing\TestResponse
+    {
+        $secret = 'test-mollie-secret';
+        config(['services.mollie.webhook_secret' => $secret]);
+        $body = json_encode($payload);
+        $sig = 'sha256=' . hash_hmac('sha256', $body, $secret);
+        return $this->withHeader('X-Mollie-Signature', $sig)
+            ->postJson('/api/webhooks/mollie', $payload);
+    }
+
+    // --- SECURITY TESTS ---
+
+    public function test_mollie_webhook_rejects_when_no_secret_configured(): void
+    {
+        config(['services.mollie.webhook_secret' => null]);
+
+        $response = $this->postJson('/api/webhooks/mollie', ['id' => 'tr_any', 'status' => 'paid']);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_mollie_webhook_rejects_invalid_signature(): void
+    {
+        config(['services.mollie.webhook_secret' => 'test-mollie-secret']);
+
+        $response = $this->withHeader('X-Mollie-Signature', 'sha256=invalidsig')
+            ->postJson('/api/webhooks/mollie', ['id' => 'tr_any', 'status' => 'paid']);
+
+        $response->assertStatus(401);
+    }
+
+    // --- FUNCTIONAL TESTS ---
+
     public function test_mollie_webhook_paid(): void
     {
         $payment = Payment::factory()->create([
@@ -92,7 +127,7 @@ class PaymentTest extends TestCase
             'status'       => 'pending',
         ]);
 
-        $response = $this->postJson('/api/webhooks/mollie', [
+        $response = $this->mollieSignedRequest([
             'id'     => $payment->mollie_payment_id,
             'status' => 'paid',
         ]);
@@ -112,14 +147,12 @@ class PaymentTest extends TestCase
             'paid_at'    => now(),
         ]);
 
-        // Second webhook for same payment
-        $response = $this->postJson('/api/webhooks/mollie', [
+        $response = $this->mollieSignedRequest([
             'id'     => $payment->mollie_payment_id,
             'status' => 'paid',
         ]);
 
         $response->assertOk();
-        // Status unchanged
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'paid']);
     }
 
@@ -134,7 +167,7 @@ class PaymentTest extends TestCase
             'retry_count' => 0,
         ]);
 
-        $response = $this->postJson('/api/webhooks/mollie', [
+        $response = $this->mollieSignedRequest([
             'id'     => $payment->mollie_payment_id,
             'status' => 'failed',
         ]);
@@ -152,10 +185,10 @@ class PaymentTest extends TestCase
             'invoice_id'  => $this->invoice->id,
             'amount'      => 595.00,
             'status'      => 'pending',
-            'retry_count' => 3, // max is 3
+            'retry_count' => 3,
         ]);
 
-        $this->postJson('/api/webhooks/mollie', [
+        $this->mollieSignedRequest([
             'id'     => $payment->mollie_payment_id,
             'status' => 'failed',
         ]);
@@ -165,7 +198,7 @@ class PaymentTest extends TestCase
 
     public function test_mollie_webhook_unknown_payment_returns_ok(): void
     {
-        $response = $this->postJson('/api/webhooks/mollie', [
+        $response = $this->mollieSignedRequest([
             'id'     => 'tr_nonexistent',
             'status' => 'paid',
         ]);

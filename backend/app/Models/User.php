@@ -38,10 +38,11 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'active' => 'boolean',
+            'email_verified_at'  => 'datetime',
+            'password'           => 'hashed',
+            'active'             => 'boolean',
             'two_factor_enabled' => 'boolean',
+            'totp_secret'        => 'encrypted',
         ];
     }
 }

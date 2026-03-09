@@ -14,6 +14,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Unit;
 use App\Services\InvoiceService;
+use App\Traits\GeneratesSignedUrl;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,15 @@ use Illuminate\Support\Facades\Storage;
 
 class ContractController extends Controller
 {
+    use GeneratesSignedUrl;
+
+    private string $disk;
+
+    public function __construct()
+    {
+        $this->disk = config('filesystems.default', 'local');
+    }
+
     private const STATUS_TRANSITIONS = [
         'draft'               => ['awaiting_signature', 'declined'],
         'awaiting_signature'  => ['signed', 'declined'],
@@ -56,7 +66,7 @@ class ContractController extends Controller
 
         $pdfPath = "contracts/draft-{$applicationId}-" . now()->format('Ymd_His') . '.pdf';
         $pdfContent = $template?->template_html ?? '<html><body>Contract for application ' . $applicationId . '</body></html>';
-        Storage::disk('s3')->put($pdfPath, $pdfContent);
+        Storage::disk($this->disk)->put($pdfPath, $pdfContent);
 
         $contract = Contract::create([
             'application_id'     => $application->id,
@@ -103,7 +113,13 @@ class ContractController extends Controller
     public function show(int $id): JsonResponse
     {
         $contract = Contract::with(['customer', 'unit', 'application', 'signatures', 'renewals'])->findOrFail($id);
-        return response()->json($contract);
+
+        $data = $contract->toArray();
+        if ($contract->signed_pdf_path) {
+            $data['signed_pdf_url'] = $this->signedUrl($this->disk, $contract->signed_pdf_path);
+        }
+
+        return response()->json($data);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -159,7 +175,7 @@ class ContractController extends Controller
     public function esignWebhook(Request $request): JsonResponse
     {
         $secret = config('services.esign.webhook_secret');
-        if ($secret && $request->header('X-Esign-Secret') !== $secret) {
+        if (!$secret || $request->header('X-Esign-Secret') !== $secret) {
             return response()->json(['message' => 'Unauthorized.'], 401);
         }
 
@@ -180,7 +196,7 @@ class ContractController extends Controller
 
         // Store signed PDF stub
         $pdfPath = "contracts/signed-{$contract->id}-" . now()->format('Ymd_His') . '.pdf';
-        Storage::disk('s3')->put($pdfPath, '%PDF-1.4 signed contract stub');
+        Storage::disk($this->disk)->put($pdfPath, '%PDF-1.4 signed contract stub');
 
         $old = $contract->toArray();
         $contract->update([
@@ -350,8 +366,8 @@ class ContractController extends Controller
     {
         $contract = Contract::with('unit')->findOrFail($id);
 
-        if (!in_array('expired', self::STATUS_TRANSITIONS[$contract->status] ?? [], true)) {
-            return response()->json(['message' => "Cannot renew a contract in '{$contract->status}' status."], 422);
+        if ($contract->status !== 'active') {
+            return response()->json(['message' => "Only active contracts can be renewed. Current status: '{$contract->status}'."], 422);
         }
 
         $data = $request->validate([

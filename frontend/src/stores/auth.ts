@@ -17,7 +17,7 @@ interface User {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem('auth_token'))
+  const token = ref<string | null>(sessionStorage.getItem('auth_token'))
   const user = ref<User | null>(null)
 
   const role = computed(() => user.value?.role ?? null)
@@ -33,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     token.value = data.token
-    localStorage.setItem('auth_token', data.token)
+    sessionStorage.setItem('auth_token', data.token)
     user.value = data.user
 
     return data
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     token.value = null
     user.value = null
-    localStorage.removeItem('auth_token')
+    sessionStorage.removeItem('auth_token')
     router.push('/login')
   }
 

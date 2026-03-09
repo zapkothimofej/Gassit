@@ -39,7 +39,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-    Route::post('/2fa/verify', [TwoFactorController::class, 'verify']);
+    Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->middleware('throttle:5,1');
 
     Route::middleware(['auth:sanctum', 'throttle:api-write'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);

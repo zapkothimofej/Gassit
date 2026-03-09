@@ -32,6 +32,7 @@ class ContractTest extends TestCase
     {
         parent::setUp();
         Storage::fake('s3');
+        Storage::fake('local');
 
         $this->admin    = User::factory()->create(['role' => 'admin', 'active' => true]);
         $this->park     = Park::factory()->create();
@@ -99,7 +100,7 @@ class ContractTest extends TestCase
             'status'         => 'draft',
         ]);
 
-        Storage::disk('s3')->assertExists($response->json('signed_pdf_path'));
+        Storage::disk(config('filesystems.default', 'local'))->assertExists($response->json('signed_pdf_path'));
     }
 
     // --- LIST ---
@@ -191,11 +192,50 @@ class ContractTest extends TestCase
 
     // --- ESIGN WEBHOOK ---
 
+    private function esignSignedRequest(array $payload): \Illuminate\Testing\TestResponse
+    {
+        $secret = 'test-esign-secret';
+        config(['services.esign.webhook_secret' => $secret]);
+        return $this->withHeader('X-Esign-Secret', $secret)
+            ->postJson('/api/webhooks/esign', $payload);
+    }
+
+    public function test_esign_webhook_rejects_when_no_secret_configured(): void
+    {
+        config(['services.esign.webhook_secret' => null]);
+
+        $response = $this->postJson('/api/webhooks/esign', [
+            'esign_provider_id' => 'stub',
+            'contract_id'       => 1,
+            'signer_type'       => 'customer',
+            'signer_name'       => 'Test',
+            'signed_at'         => now()->toIso8601String(),
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_esign_webhook_rejects_wrong_secret(): void
+    {
+        config(['services.esign.webhook_secret' => 'correct-secret']);
+
+        $response = $this->withHeader('X-Esign-Secret', 'wrong-secret')
+            ->postJson('/api/webhooks/esign', [
+                'esign_provider_id' => 'stub',
+                'contract_id'       => 1,
+                'signer_type'       => 'customer',
+                'signer_name'       => 'Test',
+                'signed_at'         => now()->toIso8601String(),
+            ]);
+
+        $response->assertStatus(401);
+    }
+
     public function test_esign_webhook_signs_contract(): void
     {
         $contract = $this->makeContract(['status' => 'awaiting_signature']);
 
-        $response = $this->postJson('/api/webhooks/esign', [
+        $response = $this->esignSignedRequest([
             'esign_provider_id' => 'stub-abc123',
             'contract_id'       => $contract->id,
             'signer_type'       => 'customer',
@@ -213,14 +253,14 @@ class ContractTest extends TestCase
             'signer_name' => 'Max Mustermann',
         ]);
 
-        Storage::disk('s3')->assertExists($response->json('contract.signed_pdf_path'));
+        Storage::disk(config('filesystems.default', 'local'))->assertExists($response->json('contract.signed_pdf_path'));
     }
 
     public function test_esign_webhook_rejects_non_awaiting_contract(): void
     {
         $contract = $this->makeContract(['status' => 'draft']);
 
-        $this->postJson('/api/webhooks/esign', [
+        $this->esignSignedRequest([
             'esign_provider_id' => 'stub-abc123',
             'contract_id'       => $contract->id,
             'signer_type'       => 'customer',

@@ -58,10 +58,14 @@ class TwoFactorController extends Controller
             'code' => ['required', 'string', 'size:6'],
         ]);
 
-        // Resolve user from temp token (token named 'temp-2fa')
         $tokenRecord = \Laravel\Sanctum\PersonalAccessToken::findToken($request->temp_token);
 
         if (! $tokenRecord || $tokenRecord->name !== 'temp-2fa') {
+            return response()->json(['message' => 'Invalid or expired token.'], 401);
+        }
+
+        if ($tokenRecord->created_at->lt(now()->subMinutes(5))) {
+            $tokenRecord->delete();
             return response()->json(['message' => 'Invalid or expired token.'], 401);
         }
 

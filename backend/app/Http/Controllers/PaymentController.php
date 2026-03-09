@@ -79,15 +79,15 @@ class PaymentController extends Controller
 
     public function mollieWebhook(Request $request): JsonResponse
     {
-        // Verify Mollie signature if secret is configured
         $mollieSecret = config('services.mollie.webhook_secret');
-        if ($mollieSecret) {
-            $signature  = $request->header('X-Mollie-Signature');
-            $payload    = $request->getContent();
-            $expected   = 'sha256=' . hash_hmac('sha256', $payload, $mollieSecret);
-            if (!$signature || !hash_equals($expected, $signature)) {
-                return response()->json(['message' => 'Invalid signature.'], 401);
-            }
+        if (!$mollieSecret) {
+            return response()->json(['message' => 'Webhook not configured.'], 401);
+        }
+        $signature = $request->header('X-Mollie-Signature');
+        $payload   = $request->getContent();
+        $expected  = 'sha256=' . hash_hmac('sha256', $payload, $mollieSecret);
+        if (!$signature || !hash_equals($expected, $signature)) {
+            return response()->json(['message' => 'Invalid signature.'], 401);
         }
 
         $mollieId = $request->input('id');

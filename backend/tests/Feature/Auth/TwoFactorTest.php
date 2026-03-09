@@ -112,6 +112,46 @@ class TwoFactorTest extends TestCase
             ->assertJsonStructure(['access_token', 'token_type', 'user']);
     }
 
+    public function test_totp_secret_is_stored_encrypted_in_database(): void
+    {
+        $user = User::factory()->create(['active' => true]);
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/auth/2fa/setup');
+
+        $response->assertOk();
+
+        $returnedSecret = $response->json('secret');
+        $dbRaw = \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->value('totp_secret');
+
+        // Plaintext secret must NOT be stored directly
+        $this->assertNotEquals($returnedSecret, $dbRaw);
+    }
+
+    public function test_2fa_temp_token_is_rejected_after_5_minutes(): void
+    {
+        $google2fa = new Google2FA();
+        $secret = $google2fa->generateSecretKey();
+
+        $user = User::factory()->create([
+            'active'             => true,
+            'totp_secret'        => $secret,
+            'two_factor_enabled' => true,
+        ]);
+
+        $tempToken = $user->createToken('temp-2fa')->plainTextToken;
+
+        $this->travel(6)->minutes();
+
+        $response = $this->postJson('/api/auth/2fa/verify', [
+            'temp_token' => $tempToken,
+            'code'       => '000000',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
     public function test_disable_requires_password_confirmation(): void
     {
         $google2fa = new Google2FA();
