@@ -197,6 +197,12 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin', 'main_manager', 'office_worker'] },
       },
       {
+        path: 'mail-templates',
+        name: 'MailTemplates',
+        component: () => import('../views/MailTemplatesView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'office_worker'] },
+      },
+      {
         path: 'reports',
         name: 'Reports',
         component: () => import('../views/ReportsView.vue'),

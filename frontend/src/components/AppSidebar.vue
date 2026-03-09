@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { label: 'Electricity',     path: '/electricity',    icon: '⚡', roles: ['admin','main_manager','rental_manager','park_worker'] },
   { label: 'Tasks',           path: '/tasks',          icon: '✅', roles: ['admin','main_manager','rental_manager','park_worker','office_worker'] },
   { label: 'Mail',            path: '/mail',           icon: '✉️', roles: ['admin','main_manager','office_worker'] },
+  { label: 'Mail Templates',  path: '/mail-templates', icon: '📧', roles: ['admin','main_manager','office_worker'] },
   { label: 'Reports',         path: '/reports',        icon: '📈', roles: ['admin','main_manager','accountant','office_worker','customer_service'] },
   { label: 'Users',           path: '/users',          icon: '👤', roles: ['admin'] },
   { label: 'Settings',        path: '/settings',       icon: '⚙️', roles: ['admin'] },
