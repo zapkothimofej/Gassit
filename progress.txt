@@ -917,3 +917,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Employee form.park_id/user_id use '' as null placeholder in FormSelect (converted to null on save)
   - watch() import can be combined with onMounted for reactive option lists from async data
 ---
+
+## 2026-03-09 - US-072
+- Created ReferenceDataView.vue: tab navigation for all 7 reference categories (country, city, document_type, termination_reason, damage_category, unit_feature, industry_sector)
+- Each tab: AppTable with sort_order (inline number input saves on blur), value, label, active toggle, edit/deactivate actions
+- Deactivated items shown grayed out with strikethrough in label column
+- Create/Edit modal with value, label, sort_order fields
+- Deactivate calls DELETE /reference-items/{id} (backend sets active=false)
+- Added /admin/reference-data route (admin only) to router
+- vue-tsc --noEmit typecheck passes
+- Files changed: ReferenceDataView.vue (new), router/index.ts
+- **Learnings for future iterations:**
+  - GET /reference-items returns flat array (not paginated) when filtered by category
+  - inline sort_order edit uses @blur + api.put to save silently without full reload
+  - Toggle active uses PUT /reference-items/{id} with { active: bool } — updates item in place
+---
