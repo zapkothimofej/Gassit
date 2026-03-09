@@ -7,6 +7,7 @@ import AppModal from '../components/AppModal.vue'
 import FormInput from '../components/FormInput.vue'
 import FormSelect from '../components/FormSelect.vue'
 import AppTable from '../components/AppTable.vue'
+import DepositReturnModal from '../components/DepositReturnModal.vue'
 import {
   fetchContract,
   sendForSignature,
@@ -14,7 +15,6 @@ import {
   terminateContract,
   renewContract,
   fetchContractDeposit,
-  returnDeposit,
   fetchInvoices,
   type ContractDetail,
   type Deposit,
@@ -132,18 +132,9 @@ async function doTerminate() {
 
 // --- Return Deposit ---
 const showReturnModal = ref(false)
-const returning = ref(false)
-async function doReturnDeposit() {
-  if (!deposit.value) return
-  returning.value = true
-  try {
-    await returnDeposit(deposit.value.id, { method: 'bank_transfer' })
-    await loadAll()
-    showReturnModal.value = false
-    showToast('Deposit return initiated.')
-  } finally {
-    returning.value = false
-  }
+async function onDepositReturned() {
+  await loadAll()
+  showToast('Deposit return initiated.')
 }
 
 function customerName(c: ContractDetail['customer']) {
@@ -362,13 +353,13 @@ const invoiceColumns = [
     </AppModal>
 
     <!-- Return Deposit Modal -->
-    <AppModal v-model="showReturnModal" title="Return Deposit">
-      <p>Initiate deposit return via bank transfer for {{ deposit?.amount }} €?</p>
-      <template #footer>
-        <AppButton variant="secondary" @click="showReturnModal = false">Cancel</AppButton>
-        <AppButton :loading="returning" @click="doReturnDeposit">Confirm Return</AppButton>
-      </template>
-    </AppModal>
+    <DepositReturnModal
+      v-if="deposit"
+      v-model="showReturnModal"
+      :deposit="deposit"
+      :contract-id="contractId"
+      @done="onDepositReturned"
+    />
   </div>
 </template>
 
