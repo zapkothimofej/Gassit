@@ -887,3 +887,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - HTML textarea editor used instead of Tiptap for raw HTML/CSS PDF templates
   - Variable insertion at cursor position uses textarea selectionStart/selectionEnd
 ---
+
+## 2026-03-09 - US-070
+- Created SystemSettingsView.vue at /settings/system
+- Sections: Invoice (invoice_day, tax_rate), Dunning (delays + fees per level), Payment (retry_max, retry_interval_hours), Security (session_timeout, login_max_attempts), Branding (primary color, language)
+- Fetches GET /api/system-settings on mount, merges into form defaults
+- Save: PUT /api/system-settings with all key/value pairs, shows toast
+- Added route `settings/system` (SystemSettings) in router/index.ts
+- Files changed: frontend/src/views/SystemSettingsView.vue, frontend/src/router/index.ts
+- **Learnings for future iterations:**
+  - SystemSettingController skips keys not already in DB — UI sends all keys, backend ignores unknowns
+  - GET /api/system-settings returns flat array [{id, key, value, description}]
+  - PUT /api/system-settings expects {settings: [{key, value}]}
+---
