@@ -177,6 +177,34 @@ class MailController extends Controller
     // Mass send
     // -------------------------------------------------------------------------
 
+    public function recipientCount(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'park_ids'          => ['nullable', 'array'],
+            'park_ids.*'        => ['integer', 'exists:parks,id'],
+            'customer_statuses' => ['nullable', 'array'],
+            'customer_statuses.*' => ['string'],
+            'contract_status'   => ['nullable', 'string'],
+        ]);
+
+        $query = Customer::query();
+
+        if (!empty($data['park_ids'])) {
+            $parkIds = $data['park_ids'];
+            $query->whereHas('applications', fn ($q) => $q->whereIn('park_id', $parkIds));
+        }
+
+        if (!empty($data['customer_statuses'])) {
+            $query->whereIn('status', $data['customer_statuses']);
+        }
+
+        if (!empty($data['contract_status'])) {
+            $query->whereHas('contracts', fn ($q) => $q->where('status', $data['contract_status']));
+        }
+
+        return response()->json(['count' => $query->count()]);
+    }
+
     public function massSend(Request $request): JsonResponse
     {
         $data = $request->validate([

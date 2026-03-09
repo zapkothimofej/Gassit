@@ -288,6 +288,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->pr
 
 // Mail send/preview/log
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->prefix('mail')->group(function () {
+    Route::post('/recipient-count', [MailController::class, 'recipientCount']);
     Route::post('/preview', [MailController::class, 'preview']);
     Route::post('/send', [MailController::class, 'send']);
     Route::post('/mass-send', [MailController::class, 'massSend']);
@@ -300,6 +301,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('document
     Route::get('/', [DocumentTemplateController::class, 'index']);
     Route::post('/', [DocumentTemplateController::class, 'store']);
     Route::put('/{id}', [DocumentTemplateController::class, 'update']);
+    Route::post('/{id}/preview', [DocumentTemplateController::class, 'preview']);
     Route::post('/{id}/clone', [DocumentTemplateController::class, 'clone']);
 });
 

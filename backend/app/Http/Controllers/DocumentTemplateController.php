@@ -90,6 +90,17 @@ class DocumentTemplateController extends Controller
         return response()->json($template->load('park'));
     }
 
+    public function preview(Request $request, int $id)
+    {
+        $template = DocumentTemplate::findOrFail($id);
+
+        $html = $template->template_html ?? '<p>No template content.</p>';
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
     public function clone(Request $request, int $id): JsonResponse
     {
         $original = DocumentTemplate::findOrFail($id);
