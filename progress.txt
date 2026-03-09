@@ -874,3 +874,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Chip-style multi-select pattern used for park/status filters (togglePark/toggleStatus with array.indexOf)
   - `watch([...], fn, { deep: true })` needed for array refs to trigger on item push/splice
 ---
+
+## 2026-03-09 - US-069
+- Created DocumentTemplatesView.vue: list grouped by template type with version badge, active toggle, edit/clone/preview actions
+- Created DocumentTemplateEditView.vue: two-column layout with meta/park settings panel + variable reference sidebar on left, HTML textarea editor on right; preview opens PDF blob in new tab; save/toast feedback
+- Added routes: /settings/document-templates (DocumentTemplates) and /settings/document-templates/:id/edit (DocumentTemplateEdit)
+- Files changed: frontend/src/views/DocumentTemplatesView.vue, frontend/src/views/DocumentTemplateEditView.vue, frontend/src/router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Document templates differ from mail templates: PDF-based, grouped by type, have version numbers
+  - Preview opens a Blob URL in new tab (responseType: 'blob' on axios call)
+  - HTML textarea editor used instead of Tiptap for raw HTML/CSS PDF templates
+  - Variable insertion at cursor position uses textarea selectionStart/selectionEnd
+---
