@@ -5,10 +5,10 @@ const router = useRouter()
 
 <template>
   <div class="error-page">
-    <div class="error-icon">🔒</div>
-    <h1 class="error-code">403</h1>
-    <h2 class="error-title">Kein Zugriff</h2>
-    <p class="error-msg">Du hast keine Berechtigung, diese Seite aufzurufen.</p>
+    <div class="error-icon">🔍</div>
+    <h1 class="error-code">404</h1>
+    <h2 class="error-title">Seite nicht gefunden</h2>
+    <p class="error-msg">Die angeforderte Seite existiert nicht oder wurde verschoben.</p>
     <button class="back-btn" @click="router.push('/dashboard')">Zurück zum Dashboard</button>
   </div>
 </template>

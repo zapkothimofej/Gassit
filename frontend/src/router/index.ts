@@ -309,6 +309,16 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/404',
+    name: 'NotFound',
+    component: () => import('../views/NotFoundView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404',
+  },
 ]
 
 const router = createRouter({
