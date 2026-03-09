@@ -1082,3 +1082,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - 404 catch-all must be last in routes array: path: '/:pathMatch(.*)*' redirects to /404
   - Global axios error handler: use error.response?.status >= 500 (not just 500) to catch all server errors
 ---
+
+## 2026-03-09 - US-084
+- AppSidebar: accepts collapsed prop + emits toggle; collapsed=true sets width 56px (icon-only); hamburger button in sidebar header
+- AppLayout: manages sidebarCollapsed ref (default true on <1024px), passes to AppSidebar, passes toggle-sidebar emit up from TopBar
+- AppTopBar: emits toggle-sidebar; mobile-hamburger button (hidden on desktop via display:none); park-selector and search-wrapper have hide-mobile class (display:none on <640px); user-name hidden on mobile
+- AppModal: full-width bottom sheet on <640px via @media query
+- DashboardView: KPI grid 2 cols on tablet (<1024px), 1 col on mobile (<640px); row-2 and kanban become single column on tablet
+- AppTable already had overflow-x: auto on .table-wrapper
+- Files changed: AppSidebar.vue, AppTopBar.vue, AppModal.vue, AppLayout.vue, DashboardView.vue
+- Typecheck passes
+---
