@@ -89,6 +89,12 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin', 'main_manager', 'rental_manager', 'office_worker', 'customer_service'] },
       },
       {
+        path: 'applications/reports',
+        name: 'ApplicationReports',
+        component: () => import('../views/ApplicationReportsView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'rental_manager', 'office_worker', 'customer_service'] },
+      },
+      {
         path: 'waiting-list',
         name: 'WaitingList',
         component: () => import('../views/WaitingListView.vue'),
