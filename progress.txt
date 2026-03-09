@@ -932,3 +932,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - inline sort_order edit uses @blur + api.put to save silently without full reload
   - Toggle active uses PUT /reference-items/{id} with { active: bool } — updates item in place
 ---
+
+## 2026-03-09 - US-073
+- Created ProfileView.vue at /profile: personal info (read-only), change password form, 2FA section, notification preferences
+- Change password: POST /auth/change-password with current_password/password/password_confirmation
+- 2FA enable flow: POST /auth/2fa/setup → QR code + secret display → verify code via POST /auth/2fa/enable
+- 2FA disable: password confirmation modal → POST /auth/2fa/disable
+- Notification preferences: 5 toggles (task_assigned, invoice_overdue, application_assigned, waiting_list_available, dunning_escalated) saved via PUT /auth/notification-preferences
+- Added /profile route to router (all roles)
+- vue-tsc --noEmit typecheck passes
+- Files changed: ProfileView.vue (new), router/index.ts
+- **Learnings for future iterations:**
+  - /auth/me returns two_factor_enabled field — use this to show current 2FA status
+  - QR code from /auth/2fa/setup may be a data: URI or plain string — handle both display cases
+  - Notification preferences endpoint may not exist yet (gracefully handled with try/catch)
+---
