@@ -1017,3 +1017,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - DATEV export uses separate datevFrom/datevTo (not the main date filters) so user can choose specific fiscal period
   - `exportExcel` function already existed from US-077; Finance tab calls it with 'finance' cast to avoid TS complaints
 ---
+
+## 2026-03-09 - US-079
+- Extended ReportsView.vue: Audit tab visible to admin role only (v-if auth.role === 'admin', hidden from tab bar otherwise)
+- Audit table: user, action (colored badge: created/updated/deleted), model_type, model_id, old/new value summaries, IP, timestamp
+- Filters: user select (loaded from /admin/users), model_type select (predefined list), date range
+- Click row: expand/collapse inline diff view showing full old/new values in JSON format (red/green highlighted pre blocks)
+- Pagination: prev/next buttons with page info
+- Export CSV: window.open /api/audit-log?format=csv with filters
+- Files changed: frontend/src/views/ReportsView.vue
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Separate watch for auditPage (triggers loadAuditLog), and watch for filters (resets page to 1 first)
+  - Inline diff uses template v-for with `template` + conditional detail row below each data row
+  - action-badge CSS classes use dot notation with action value: created/updated/deleted
+---
