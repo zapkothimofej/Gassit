@@ -1093,3 +1093,18 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Files changed: AppSidebar.vue, AppTopBar.vue, AppModal.vue, AppLayout.vue, DashboardView.vue
 - Typecheck passes
 ---
+
+## 2026-03-09 - US-085
+- Created GenerateInvoiceJob.php: processes single contract → idempotency check (billing_month unique constraint), calculates rent with discounts, adds electricity charges (unbilled readings × price_per_kwh), creates invoice + items, marks readings as billed, logs result
+- Updated GenerateMonthlyInvoices job: now dispatches GenerateInvoiceJob per active contract (not inline processing)
+- Created GenerateMonthlyInvoicesCommand: signature `invoices:generate-monthly --month=`, scheduled monthly on 1st at 06:00
+- Added billing_month migration (Y-m format, unique constraint on contract_id+billing_month)
+- Added invoice_id FK migration to electricity_readings (nullOnDelete)
+- Updated InvoiceController::generateMonthly: admin-only check, accepts optional month param
+- Tests (all pass): create invoice with correct amount, idempotency skip, skip inactive contract, dispatch-per-contract
+- Files changed: GenerateInvoiceJob.php (new), GenerateMonthlyInvoices.php, GenerateMonthlyInvoicesCommand.php (new), InvoiceController.php, Invoice.php, ElectricityReading.php, 2 migrations, console.php, GenerateInvoiceJobTest.php (new)
+- **Learnings for future iterations:**
+  - Queue::fake() + job->handle() directly: inner dispatch() calls are captured by Queue::fake
+  - Contract status enum values include: active, terminated_by_customer, terminated_by_lfg, draft, awaiting_signature, signed, declined, expired
+  - unique(['contract_id', 'billing_month']) provides DB-level idempotency guarantee
+---
