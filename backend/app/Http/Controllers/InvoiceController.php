@@ -13,6 +13,7 @@ use App\Models\Park;
 use App\Models\SentEmail;
 use App\Services\InvoiceService;
 use App\Services\PdfService;
+use App\Traits\GeneratesSignedUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -21,6 +22,15 @@ use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
+    use GeneratesSignedUrl;
+
+    private string $disk;
+
+    public function __construct()
+    {
+        $this->disk = config('filesystems.default', 'local');
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Invoice::with(['customer', 'park', 'contract', 'items']);
@@ -51,7 +61,11 @@ class InvoiceController extends Controller
     public function show(int $id): JsonResponse
     {
         $invoice = Invoice::with(['customer', 'park', 'contract', 'items'])->findOrFail($id);
-        return response()->json($invoice);
+        $data = $invoice->toArray();
+        if ($invoice->pdf_path) {
+            $data['pdf_url'] = $this->signedUrl($this->disk, $invoice->pdf_path);
+        }
+        return response()->json($data);
     }
 
     public function store(Request $request): JsonResponse
@@ -130,12 +144,12 @@ class InvoiceController extends Controller
     {
         $invoice = Invoice::with(['customer', 'park', 'items'])->findOrFail($id);
 
-        if ($invoice->pdf_path && Storage::disk('s3')->exists($invoice->pdf_path)) {
-            $content = Storage::disk('s3')->get($invoice->pdf_path);
+        if ($invoice->pdf_path && Storage::disk($this->disk)->exists($invoice->pdf_path)) {
+            $content = Storage::disk($this->disk)->get($invoice->pdf_path);
         } else {
             $pdfService = new PdfService();
             $path       = $pdfService->generateInvoice($invoice);
-            $content    = Storage::disk('s3')->get($path);
+            $content    = Storage::disk($this->disk)->get($path);
         }
 
         return response($content, 200, [
@@ -217,8 +231,8 @@ class InvoiceController extends Controller
                 'action'     => 'invoice_cancelled',
                 'model_type' => Invoice::class,
                 'model_id'   => $invoice->id,
-                'old_values' => json_encode(['status' => $old['status']]),
-                'new_values' => json_encode(['status' => 'cancelled']),
+                'old_values' => ['status' => $old['status']],
+                'new_values' => ['status' => 'cancelled'],
             ]);
         });
 
@@ -276,8 +290,8 @@ class InvoiceController extends Controller
             'action'     => $action,
             'model_type' => get_class($model),
             'model_id'   => $model->id,
-            'old_values' => json_encode($old),
-            'new_values' => json_encode($new),
+            'old_values' => $old,
+            'new_values' => $new,
         ]);
     }
 }

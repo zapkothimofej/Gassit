@@ -9,12 +9,22 @@ use App\Models\Contract;
 use App\Models\Park;
 use App\Models\Unit;
 use App\Models\UnitPhoto;
+use App\Traits\GeneratesSignedUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class UnitController extends Controller
 {
+    use GeneratesSignedUrl;
+
+    private string $disk;
+
+    public function __construct()
+    {
+        $this->disk = config('filesystems.default', 'local');
+    }
+
     private const VALID_STATUSES = ['free', 'reserved', 'rented', 'maintenance', 'inactive'];
 
     private const TRANSITIONS = [
@@ -73,7 +83,13 @@ class UnitController extends Controller
     public function show(int $id): JsonResponse
     {
         $unit = Unit::with(['park', 'unitType', 'photos'])->findOrFail($id);
-        return response()->json($unit);
+        $data = $unit->toArray();
+        $data['photos'] = $unit->photos->map(function ($photo) {
+            return array_merge($photo->toArray(), [
+                'url' => $this->signedUrl($this->disk, $photo->path),
+            ]);
+        })->toArray();
+        return response()->json($data);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -181,7 +197,7 @@ class UnitController extends Controller
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $path = $request->file('photo')->store("units/{$id}/photos", 's3');
+        $path = $request->file('photo')->store("units/{$id}/photos", $this->disk);
 
         $photo = UnitPhoto::create([
             'unit_id'    => $unit->id,
@@ -200,7 +216,7 @@ class UnitController extends Controller
 
         $photo = UnitPhoto::where('unit_id', $unit->id)->findOrFail($photoId);
 
-        Storage::disk('s3')->delete($photo->path);
+        Storage::disk($this->disk)->delete($photo->path);
         $photo->delete();
 
         return response()->json(['message' => 'Photo deleted.']);

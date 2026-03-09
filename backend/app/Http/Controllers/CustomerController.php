@@ -6,19 +6,29 @@ use App\Models\AuditLog;
 use App\Models\Blacklist;
 use App\Models\Customer;
 use App\Models\CustomerDocument;
+use App\Traits\GeneratesSignedUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class CustomerController extends Controller
 {
+    use GeneratesSignedUrl;
+
+    private string $disk;
+
+    public function __construct()
+    {
+        $this->disk = config('filesystems.default', 'local');
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Customer::query();
 
         if ($request->filled('park_id')) {
             $parkId = (int) $request->query('park_id');
-            $query->whereHas('applications', fn($q) => $q->where('park_id', $parkId));
+            $query->whereHas('applications', fn ($q) => $q->where('park_id', $parkId));
         }
 
         if ($request->filled('status')) {
@@ -27,13 +37,23 @@ class CustomerController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('company_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('id_number', 'like', "%{$search}%");
-            });
+
+            if (str_contains($search, '@')) {
+                // Email lookup via HMAC hash
+                $hash = hash_hmac('sha256', strtolower($search), config('app.key'));
+                $query->where('email_hash', $hash);
+            } else {
+                // Use Meilisearch for encrypted fields (name, id_number)
+                $scoutIds = Customer::search($search)->keys()->all();
+
+                // Also match non-encrypted company_name in DB
+                $query->where(function ($q) use ($search, $scoutIds) {
+                    $q->where('company_name', 'like', "%{$search}%");
+                    if (! empty($scoutIds)) {
+                        $q->orWhereIn('id', $scoutIds);
+                    }
+                });
+            }
         }
 
         return response()->json($query->paginate(20));
@@ -70,6 +90,12 @@ class CustomerController extends Controller
         $this->writeAuditLog($request, 'create', $customer, null, $customer->toArray());
 
         return response()->json($customer, 201);
+    }
+
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $customer = Customer::with(['contracts', 'applications'])->findOrFail($id);
+        return response()->json($customer);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -125,7 +151,7 @@ class CustomerController extends Controller
 
         $file = $request->file('document');
         $filename = $file->getClientOriginalName();
-        $path = $file->store("customers/{$id}/documents", 's3');
+        $path = $file->store("customers/{$id}/documents", $this->disk);
 
         $doc = CustomerDocument::create([
             'customer_id'   => $customer->id,
@@ -144,7 +170,7 @@ class CustomerController extends Controller
 
         $docs = $customer->documents()->get()->map(function (CustomerDocument $doc) {
             return array_merge($doc->toArray(), [
-                'download_url' => Storage::disk('s3')->temporaryUrl($doc->path, now()->addMinutes(30)),
+                'download_url' => $this->signedUrl($this->disk, $doc->path),
             ]);
         });
 
@@ -156,7 +182,7 @@ class CustomerController extends Controller
         $customer = Customer::findOrFail($id);
         $doc = CustomerDocument::where('customer_id', $customer->id)->findOrFail($docId);
 
-        Storage::disk('s3')->delete($doc->path);
+        Storage::disk($this->disk)->delete($doc->path);
         $doc->delete();
 
         return response()->json(['message' => 'Document deleted.']);
@@ -258,7 +284,7 @@ class CustomerController extends Controller
 
         if ($request->filled('park_id')) {
             $parkId = (int) $request->query('park_id');
-            $query->whereHas('customer.applications', fn($q) => $q->where('park_id', $parkId));
+            $query->whereHas('customer.applications', fn ($q) => $q->where('park_id', $parkId));
         }
 
         return response()->json($query->paginate(20));

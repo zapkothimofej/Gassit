@@ -67,7 +67,7 @@ class Customer extends Model
         static::saving(function (Customer $customer) {
             if ($customer->isDirty('email') && $customer->getAttributes()['email'] !== null) {
                 $rawEmail = $customer->email;
-                $customer->email_hash = hash('sha256', strtolower($rawEmail));
+                $customer->email_hash = hash_hmac('sha256', strtolower($rawEmail), config('app.key'));
             }
         });
     }

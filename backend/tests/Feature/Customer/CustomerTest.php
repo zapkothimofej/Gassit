@@ -34,6 +34,7 @@ class CustomerTest extends TestCase
         $this->managerToken = $this->manager->createToken('api-token')->plainTextToken;
 
         Storage::fake('s3');
+        Storage::fake('local');
     }
 
     private function adminAuth(): array
@@ -78,11 +79,13 @@ class CustomerTest extends TestCase
 
     public function test_list_customers_search_by_email(): void
     {
-        Customer::factory()->create(['email' => 'unique@test.com']);
+        $email = 'unique@test.com';
+        Customer::factory()->create(['email' => $email]);
         Customer::factory()->create(['email' => 'other@example.com']);
 
+        // Search by full email — uses email_hash lookup
         $response = $this->withHeaders($this->adminAuth())
-            ->getJson('/api/customers?search=unique')
+            ->getJson('/api/customers?search=' . urlencode($email))
             ->assertOk();
 
         $this->assertCount(1, $response->json('data'));
@@ -107,7 +110,13 @@ class CustomerTest extends TestCase
             ->assertStatus(201);
 
         $this->assertEquals('Max', $response->json('first_name'));
-        $this->assertDatabaseHas('customers', ['email' => 'max@example.com']);
+
+        // Email is encrypted in DB — look up via model
+        $customerId = $response->json('id');
+        $customer = Customer::find($customerId);
+        $this->assertNotNull($customer);
+        $this->assertEquals('max@example.com', $customer->email);
+        $this->assertEquals(hash_hmac('sha256', 'max@example.com', config('app.key')), $customer->email_hash);
     }
 
     public function test_create_customer_requires_address(): void

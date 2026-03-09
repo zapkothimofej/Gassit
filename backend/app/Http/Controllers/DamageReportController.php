@@ -14,6 +14,7 @@ use App\Models\SentEmail;
 use App\Models\Unit;
 use App\Models\Vendor;
 use App\Jobs\NotifyWaitingListEntries;
+use App\Traits\GeneratesSignedUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,15 @@ use Illuminate\Support\Facades\Storage;
 
 class DamageReportController extends Controller
 {
+    use GeneratesSignedUrl;
+
+    private string $disk;
+
+    public function __construct()
+    {
+        $this->disk = config('filesystems.default', 'local');
+    }
+
     private const TRANSITIONS = [
         'reported'       => ['in_assessment'],
         'in_assessment'  => ['repair_ordered', 'reported'],
@@ -52,7 +62,13 @@ class DamageReportController extends Controller
     public function show(int $id): JsonResponse
     {
         $report = DamageReport::with(['unit', 'reportedBy', 'assignedVendor', 'photos', 'contract'])->findOrFail($id);
-        return response()->json($report);
+        $data = $report->toArray();
+        $data['photos'] = $report->photos->map(function ($photo) {
+            return array_merge($photo->toArray(), [
+                'url' => $this->signedUrl($this->disk, $photo->path),
+            ]);
+        })->toArray();
+        return response()->json($data);
     }
 
     public function store(Request $request): JsonResponse
@@ -136,7 +152,7 @@ class DamageReportController extends Controller
             'taken_at' => ['nullable', 'date'],
         ]);
 
-        $path = Storage::disk('s3')->putFile("damage-photos/{$id}", $request->file('photo'));
+        $path = Storage::disk($this->disk)->putFile("damage-photos/{$id}", $request->file('photo'));
 
         $photo = DamagePhoto::create([
             'damage_report_id' => $report->id,
@@ -213,6 +229,7 @@ class DamageReportController extends Controller
             'recipient_email' => $vendor->email,
             'subject'         => "Damage Report #{$report->id} Assigned to You",
             'body_html'       => "<p>Dear {$vendor->contact_name},<br>Damage report #{$report->id} has been assigned to you. Description: {$report->description}</p>",
+            'sent_by'         => $request->user()->id,
             'status'          => 'queued',
         ]);
 
