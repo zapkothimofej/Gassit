@@ -40,4 +40,8 @@ return [
         'webhook_secret' => env('MOLLIE_WEBHOOK_SECRET'),
     ],
 
+    'esign' => [
+        'webhook_secret' => env('ESIGN_WEBHOOK_SECRET'),
+    ],
+
 ];

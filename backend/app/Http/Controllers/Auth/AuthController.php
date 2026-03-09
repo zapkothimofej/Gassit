@@ -61,7 +61,7 @@ class AuthController extends Controller
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
-            'access_token' => $token,
+            'token' => $token,
             'token_type' => 'Bearer',
             'user' => [
                 'id' => $user->id,
@@ -70,6 +70,40 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'parks' => $user->parks()->select('parks.id', 'parks.name')->get(),
             ],
+        ]);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password'      => ['required', 'string'],
+            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        $user->update(['password' => $request->password]);
+
+        return response()->json(['message' => 'Password changed successfully.']);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+            'role'  => $user->role,
+            'parks' => $user->parks()->select('parks.id', 'parks.name')->get(),
         ]);
     }
 
@@ -87,7 +121,7 @@ class AuthController extends Controller
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
-            'access_token' => $token,
+            'token' => $token,
             'token_type' => 'Bearer',
         ]);
     }

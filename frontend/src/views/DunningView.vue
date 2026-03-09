@@ -40,6 +40,7 @@ async function load() {
   try {
     const params: Record<string, unknown> = {}
     if (filters.park_id) params.park_id = filters.park_id
+    if (filters.dunning_level !== '') params.dunning_level = filters.dunning_level
     const res = await api.get<Debtor[]>('/debtors', { params })
     debtors.value = res.data ?? []
   } finally {
@@ -51,12 +52,6 @@ onMounted(async () => {
   load()
   const pr = await fetchParks()
   parks.value = pr.data.data ?? []
-})
-
-const filtered = computed(() => {
-  if (!filters.dunning_level) return debtors.value
-  const lvl = Number(filters.dunning_level)
-  return debtors.value.filter(d => d.dunning_level === lvl)
 })
 
 const metrics = computed(() => ({
@@ -119,12 +114,21 @@ async function doEscalate() {
 const showResolveModal = ref(false)
 const resolveTarget = ref<Debtor | null>(null)
 const resolving = ref(false)
-function openResolve(d: Debtor) { resolveTarget.value = d; showResolveModal.value = true }
+const resolveForm = reactive({ notes: '', reference: '' })
+function openResolve(d: Debtor) {
+  resolveTarget.value = d
+  resolveForm.notes = ''
+  resolveForm.reference = ''
+  showResolveModal.value = true
+}
 async function doResolve() {
   if (!resolveTarget.value) return
   resolving.value = true
   try {
-    await api.post('/debtors/' + resolveTarget.value.customer.id + '/resolve')
+    await api.post('/debtors/' + resolveTarget.value.customer.id + '/resolve', {
+      notes: resolveForm.notes,
+      reference: resolveForm.reference,
+    })
     showResolveModal.value = false
     await load()
   } finally {
@@ -160,7 +164,7 @@ async function doResolve() {
         <option :value="null">All Parks</option>
         <option v-for="p in parks" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
-      <select v-model="filters.dunning_level" class="filter-sel">
+      <select v-model="filters.dunning_level" class="filter-sel" @change="load()">
         <option value="">All Levels</option>
         <option value="0">Level 0 (No dunning)</option>
         <option value="1">Level 1</option>
@@ -171,7 +175,7 @@ async function doResolve() {
 
     <AppTable
       :columns="columns"
-      :rows="(filtered as unknown as Record<string, unknown>[])"
+      :rows="(debtors as unknown as Record<string, unknown>[])"
       @row-click="(row) => router.push('/customers/' + (row as unknown as Debtor).customer.id)"
     >
       <template #cell-name="{ row }">
@@ -245,9 +249,23 @@ async function doResolve() {
       <p>
         Mark all overdue invoices for <strong>{{ resolveTarget ? customerName(resolveTarget) : '' }}</strong> as paid and resolve dunning?
       </p>
+      <div class="resolve-fields">
+        <label class="field-label">
+          Reference <span class="required">*</span>
+          <input v-model="resolveForm.reference" class="field-input" placeholder="e.g. bank transfer ref #" required />
+        </label>
+        <label class="field-label">
+          Notes <span class="required">*</span>
+          <textarea v-model="resolveForm.notes" class="field-input" rows="3" placeholder="Reason for manual resolution" required></textarea>
+        </label>
+      </div>
       <template #footer>
         <AppButton variant="secondary" @click="showResolveModal = false">Cancel</AppButton>
-        <AppButton :loading="resolving" @click="doResolve">Resolve</AppButton>
+        <AppButton
+          :loading="resolving"
+          :disabled="!resolveForm.notes.trim() || !resolveForm.reference.trim()"
+          @click="doResolve"
+        >Resolve</AppButton>
       </template>
     </AppModal>
   </div>
@@ -284,4 +302,9 @@ async function doResolve() {
 .resolve-btn:not(:disabled):hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
 
 .fee-note { font-size: 0.875rem; color: #64748b; margin: 0; }
+
+.resolve-fields { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; }
+.field-label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem; font-weight: 500; color: #374151; }
+.field-input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.875rem; width: 100%; box-sizing: border-box; }
+.required { color: #dc2626; }
 </style>

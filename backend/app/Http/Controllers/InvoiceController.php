@@ -11,6 +11,7 @@ use App\Models\InvoiceItem;
 use App\Models\MailTemplate;
 use App\Models\Park;
 use App\Models\SentEmail;
+use App\Services\InvoiceService;
 use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,12 @@ class InvoiceController extends Controller
         return response()->json($query->orderByDesc('created_at')->paginate(20));
     }
 
+    public function show(int $id): JsonResponse
+    {
+        $invoice = Invoice::with(['customer', 'park', 'contract', 'items'])->findOrFail($id);
+        return response()->json($invoice);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -72,7 +79,8 @@ class InvoiceController extends Controller
         $taxAmount   = round($subtotal * $taxRate / 100, 2);
         $totalAmount = round($subtotal + $taxAmount, 2);
 
-        $invoiceNumber = $this->generateInvoiceNumber($park);
+        $invoiceService = new InvoiceService();
+        $invoiceNumber = $invoiceService->generateInvoiceNumber($park);
 
         $invoice = Invoice::create([
             'customer_id'    => $data['customer_id'],
@@ -100,14 +108,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        AuditLog::create([
-            'user_id'    => $request->user()->id,
-            'action'     => 'invoice_created',
-            'model_type' => Invoice::class,
-            'model_id'   => $invoice->id,
-            'old_values' => null,
-            'new_values' => json_encode(['invoice_number' => $invoiceNumber, 'total_amount' => $totalAmount]),
-        ]);
+        $this->writeAuditLog($request, 'invoice_created', $invoice, [], ['invoice_number' => $invoiceNumber, 'total_amount' => $totalAmount]);
 
         return response()->json($invoice->load('items'), 201);
     }
@@ -179,14 +180,7 @@ class InvoiceController extends Controller
         $old = $invoice->toArray();
         $invoice->update(['status' => 'sent', 'sent_at' => now()]);
 
-        AuditLog::create([
-            'user_id'    => $request->user()->id,
-            'action'     => 'invoice_sent',
-            'model_type' => Invoice::class,
-            'model_id'   => $invoice->id,
-            'old_values' => json_encode(['status' => $old['status']]),
-            'new_values' => json_encode(['status' => 'sent']),
-        ]);
+        $this->writeAuditLog($request, 'invoice_sent', $invoice, ['status' => $old['status']], ['status' => 'sent']);
 
         return response()->json($invoice->fresh());
     }
@@ -273,27 +267,6 @@ class InvoiceController extends Controller
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="datev-export-' . $data['from'] . '-' . $data['to'] . '.csv"',
         ]);
-    }
-
-    private function generateInvoiceNumber(Park $park): string
-    {
-        $code = strtoupper(preg_replace('/[^A-Za-z]/', '', $park->name));
-        $code = substr($code, 0, 4) ?: 'PARK';
-        $year = now()->year;
-
-        $prefix = $code . '-' . $year . '-';
-
-        $last = Invoice::where('invoice_number', 'like', $prefix . '%')
-            ->orderByDesc('invoice_number')
-            ->value('invoice_number');
-
-        if ($last) {
-            $seq = (int) substr($last, strlen($prefix)) + 1;
-        } else {
-            $seq = 1;
-        }
-
-        return $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
     }
 
     private function writeAuditLog(Request $request, string $action, $model, array $old, array $new): void

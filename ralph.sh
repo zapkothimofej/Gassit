@@ -93,9 +93,11 @@ for i in $(seq 1 $MAX_ITERATIONS); do
   else
     # Claude Code: use --dangerously-skip-permissions for autonomous operation, --print for output
     TMPFILE=$(mktemp)
-    claude --dangerously-skip-permissions --print < "$SCRIPT_DIR/CLAUDE.md" 2>&1 | tee "$TMPFILE"
+    echo "[$(date '+%H:%M:%S')] Claude arbeitet... (kann 10-20 Min dauern)"
+    claude --dangerously-skip-permissions --verbose -p "$(cat "$SCRIPT_DIR/CLAUDE.md")" 2>&1 | tee "$TMPFILE"
     OUTPUT=$(cat "$TMPFILE")
     rm -f "$TMPFILE"
+    echo "[$(date '+%H:%M:%S')] Iteration fertig."
   fi
   
   # Check for completion signal

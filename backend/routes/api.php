@@ -41,6 +41,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify']);
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/2fa/setup', [TwoFactorController::class, 'setup']);
@@ -49,8 +51,11 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks')->group(function () {
+Route::middleware(['auth:sanctum'])->prefix('parks')->group(function () {
     Route::get('/', [ParkController::class, 'index']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks')->group(function () {
     Route::post('/', [ParkController::class, 'store']);
     Route::put('/{id}', [ParkController::class, 'update']);
     Route::delete('/{id}', [ParkController::class, 'destroy']);
@@ -175,6 +180,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant'])->group(function () {
     Route::get('/invoices/datev-export', [InvoiceController::class, 'datevExport']);
     Route::get('/invoices', [InvoiceController::class, 'index']);
+    Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
     Route::post('/invoices', [InvoiceController::class, 'store']);
     Route::post('/invoices/generate-monthly', [InvoiceController::class, 'generateMonthly']);
     Route::get('/invoices/{id}/pdf', [InvoiceController::class, 'pdf']);
@@ -342,6 +348,7 @@ Route::middleware(['auth:sanctum'])->prefix('dashboard')->group(function () {
 // Reports
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant,office_worker,customer_service'])->prefix('reports')->group(function () {
     Route::get('/applications', [ReportController::class, 'applications']);
+    Route::get('/contracts', [ReportController::class, 'contracts']);
     Route::get('/customers', [ReportController::class, 'customers']);
     Route::get('/units', [ReportController::class, 'units']);
     Route::get('/finance', [ReportController::class, 'finance']);

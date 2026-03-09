@@ -14,9 +14,11 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Park;
 use App\Models\Unit;
+use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ContractController extends Controller
@@ -127,8 +129,8 @@ class ContractController extends Controller
     {
         $contract = Contract::findOrFail($id);
 
-        if ($contract->status !== 'draft') {
-            return response()->json(['message' => 'Contract must be in draft status to send for signature.'], 422);
+        if (!in_array('awaiting_signature', self::STATUS_TRANSITIONS[$contract->status] ?? [], true)) {
+            return response()->json(['message' => "Cannot transition contract from '{$contract->status}' to 'awaiting_signature'."], 422);
         }
 
         // E-sign provider stub (DocuSign/HelloSign)
@@ -153,6 +155,11 @@ class ContractController extends Controller
 
     public function esignWebhook(Request $request): JsonResponse
     {
+        $secret = config('services.esign.webhook_secret');
+        if ($secret && $request->header('X-Esign-Secret') !== $secret) {
+            return response()->json(['message' => 'Unauthorized.'], 401);
+        }
+
         $data = $request->validate([
             'esign_provider_id' => ['required', 'string'],
             'contract_id'       => ['required', 'exists:contracts,id'],
@@ -197,8 +204,8 @@ class ContractController extends Controller
     {
         $contract = Contract::with('unit')->findOrFail($id);
 
-        if ($contract->status !== 'signed') {
-            return response()->json(['message' => 'Contract must be signed before activation.'], 422);
+        if (!in_array('active', self::STATUS_TRANSITIONS[$contract->status] ?? [], true)) {
+            return response()->json(['message' => "Cannot transition contract from '{$contract->status}' to 'active'."], 422);
         }
 
         $old = $contract->toArray();
@@ -231,31 +238,31 @@ class ContractController extends Controller
     {
         $contract = Contract::findOrFail($id);
 
-        if ($contract->status !== 'active') {
-            return response()->json(['message' => 'Only active contracts can be terminated.'], 422);
-        }
-
         $data = $request->validate([
             'termination_type'        => ['required', 'in:customer,lfg'],
             'termination_notice_date' => ['required', 'date'],
             'termination_reason_id'   => ['nullable', 'integer'],
         ]);
 
+        $newStatus = $data['termination_type'] === 'customer'
+            ? 'terminated_by_customer'
+            : 'terminated_by_lfg';
+
+        if (!in_array($newStatus, self::STATUS_TRANSITIONS[$contract->status] ?? [], true)) {
+            return response()->json(['message' => "Cannot transition contract from '{$contract->status}' to '{$newStatus}'."], 422);
+        }
+
         // Validate: termination date must be >= notice_date + notice_period_days
-        $noticeDate = Carbon::parse($data['termination_notice_date']);
-        $earliest = $noticeDate->copy()->addDays($contract->notice_period_days);
+        $noticeDate   = Carbon::parse($data['termination_notice_date']);
+        $earliest     = $noticeDate->copy()->addDays($contract->notice_period_days);
         $terminatedAt = now();
 
         if ($terminatedAt->lt($earliest)) {
             return response()->json([
-                'message'           => "Termination requires {$contract->notice_period_days} days notice. Earliest termination: {$earliest->toDateString()}.",
+                'message'              => "Termination requires {$contract->notice_period_days} days notice. Earliest termination: {$earliest->toDateString()}.",
                 'earliest_termination' => $earliest->toDateString(),
             ], 422);
         }
-
-        $newStatus = $data['termination_type'] === 'customer'
-            ? 'terminated_by_customer'
-            : 'terminated_by_lfg';
 
         $old = $contract->toArray();
         $contract->update([
@@ -272,10 +279,10 @@ class ContractController extends Controller
         }
 
         // Create pro-rated final invoice for current month
-        $today = $terminatedAt->copy()->startOfDay();
-        $daysInMonth = $today->daysInMonth;
-        $daysUsed = $today->day;
-        $dailyRate = round((float) $contract->rent_amount / $daysInMonth, 4);
+        $today        = $terminatedAt->copy()->startOfDay();
+        $daysInMonth  = $today->daysInMonth;
+        $daysUsed     = $today->day;
+        $dailyRate    = round((float) $contract->rent_amount / $daysInMonth, 4);
         $proratedRent = round($dailyRate * $daysUsed, 2);
 
         $park = $unit?->park ?? Park::first();
@@ -286,13 +293,8 @@ class ContractController extends Controller
                 ->first();
 
             if (!$existing) {
-                $code   = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $park->name), 0, 4)) ?: 'PARK';
-                $year   = now()->year;
-                $prefix = $code . '-' . $year . '-';
-                $last   = Invoice::where('invoice_number', 'like', $prefix . '%')
-                    ->orderByDesc('invoice_number')->value('invoice_number');
-                $seq    = $last ? ((int) substr($last, strlen($prefix)) + 1) : 1;
-                $invoiceNumber = $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
+                $invoiceService = new InvoiceService();
+                $invoiceNumber  = $invoiceService->generateInvoiceNumber($park);
 
                 $invoice = Invoice::create([
                     'contract_id'    => $contract->id,
@@ -301,7 +303,7 @@ class ContractController extends Controller
                     'invoice_number' => $invoiceNumber,
                     'billing_month'  => $billingMonth,
                     'issue_date'     => $today->format('Y-m-d'),
-                    'due_date'       => $today->addDays(14)->format('Y-m-d'),
+                    'due_date'       => $today->copy()->addDays(14)->format('Y-m-d'),
                     'subtotal'       => $proratedRent,
                     'tax_rate'       => 0,
                     'tax_amount'     => 0,
@@ -334,7 +336,7 @@ class ContractController extends Controller
         }
 
         $this->writeAuditLog($request, 'terminate', $contract, $old, [
-            'status'       => $newStatus,
+            'status'        => $newStatus,
             'terminated_at' => $terminatedAt->toIso8601String(),
         ]);
 
@@ -345,8 +347,8 @@ class ContractController extends Controller
     {
         $contract = Contract::with('unit')->findOrFail($id);
 
-        if ($contract->status !== 'active') {
-            return response()->json(['message' => 'Only active contracts can be renewed.'], 422);
+        if (!in_array('expired', self::STATUS_TRANSITIONS[$contract->status] ?? [], true)) {
+            return response()->json(['message' => "Cannot renew a contract in '{$contract->status}' status."], 422);
         }
 
         $data = $request->validate([

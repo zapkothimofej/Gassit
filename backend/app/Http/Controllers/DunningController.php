@@ -34,6 +34,8 @@ class DunningController extends Controller
             });
         }
 
+        $filterLevel = $request->filled('dunning_level') ? (int) $request->query('dunning_level') : null;
+
         $customers = $query->get()->map(function (Customer $customer) {
             $overdueInvoices = $customer->invoices;
 
@@ -50,6 +52,10 @@ class DunningController extends Controller
                 'invoice_count'  => $overdueInvoices->count(),
             ];
         });
+
+        if ($filterLevel !== null) {
+            $customers = $customers->filter(fn ($d) => $d['dunning_level'] === $filterLevel)->values();
+        }
 
         return response()->json($customers);
     }
@@ -127,6 +133,11 @@ class DunningController extends Controller
 
     public function resolve(Request $request, int $customerId): JsonResponse
     {
+        $data = $request->validate([
+            'notes'     => ['required', 'string', 'max:1000'],
+            'reference' => ['required', 'string', 'max:255'],
+        ]);
+
         $customer = Customer::findOrFail($customerId);
 
         $overdueInvoices = Invoice::where('customer_id', $customerId)
@@ -138,7 +149,7 @@ class DunningController extends Controller
             return response()->json(['message' => 'No overdue invoices to resolve.'], 422);
         }
 
-        DB::transaction(function () use ($overdueInvoices, $customer, $request) {
+        DB::transaction(function () use ($overdueInvoices, $customer, $request, $data) {
             foreach ($overdueInvoices as $invoice) {
                 $invoice->update([
                     'status'  => 'paid',
@@ -146,13 +157,13 @@ class DunningController extends Controller
                 ]);
 
                 Payment::create([
-                    'invoice_id'     => $invoice->id,
-                    'amount'         => $invoice->total_amount,
-                    'currency'       => 'EUR',
-                    'payment_method' => 'bank_transfer',
-                    'status'         => 'paid',
-                    'paid_at'        => now(),
-                    
+                    'invoice_id'       => $invoice->id,
+                    'amount'           => $invoice->total_amount,
+                    'currency'         => 'EUR',
+                    'payment_method'   => 'bank_transfer',
+                    'status'           => 'paid',
+                    'paid_at'          => now(),
+                    'mollie_payment_id' => $data['reference'],
                 ]);
             }
 
@@ -167,7 +178,12 @@ class DunningController extends Controller
                 'model_type' => Customer::class,
                 'model_id'   => $customer->id,
                 'old_values' => json_encode(['status' => $customer->getOriginal('status')]),
-                'new_values' => json_encode(['status' => 'tenant', 'resolved_invoices' => $overdueInvoices->count()]),
+                'new_values' => json_encode([
+                    'status'            => 'tenant',
+                    'resolved_invoices' => $overdueInvoices->count(),
+                    'reference'         => $data['reference'],
+                    'notes'             => $data['notes'],
+                ]),
             ]);
         });
 

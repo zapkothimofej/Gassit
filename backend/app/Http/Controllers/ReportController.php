@@ -179,6 +179,39 @@ class ReportController extends Controller
         return response()->json($rows);
     }
 
+    public function contracts(Request $request)
+    {
+        $user   = $request->user();
+        $parkId = $request->query('park_id');
+        $status = $request->query('status');
+        $format = $request->query('format', 'json');
+
+        if ($parkId && ! ParkScopeMiddleware::hasAccessToPark($user, (int) $parkId)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $rows = Contract::with(['customer', 'unit.park'])
+            ->when($parkId, fn ($q) => $q->whereHas('unit', fn ($q2) => $q2->where('park_id', $parkId)))
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->get()
+            ->map(fn ($c) => [
+                'id'          => $c->id,
+                'park'        => $c->unit?->park?->name,
+                'unit'        => $c->unit?->unit_number,
+                'customer'    => $c->customer ? $c->customer->first_name . ' ' . $c->customer->last_name : null,
+                'status'      => $c->status,
+                'start_date'  => $c->start_date?->toDateString(),
+                'end_date'    => $c->end_date?->toDateString(),
+                'rent_amount' => (float) $c->rent_amount,
+            ]);
+
+        if ($format === 'xlsx') {
+            return $this->xlsxResponse($rows->toArray(), 'contracts');
+        }
+
+        return response()->json($rows);
+    }
+
     private function xlsxResponse(array $rows, string $filename)
     {
         if (empty($rows)) {
