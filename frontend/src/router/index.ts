@@ -53,6 +53,12 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin', 'main_manager'] },
       },
       {
+        path: 'unit-types',
+        name: 'UnitTypes',
+        component: () => import('../views/UnitTypesView.vue'),
+        meta: { roles: ['admin', 'main_manager'] },
+      },
+      {
         path: 'units',
         name: 'Units',
         component: () => import('../views/UnitsView.vue'),
