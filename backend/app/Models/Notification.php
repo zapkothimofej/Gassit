@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\NotificationCreated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +20,10 @@ class Notification extends Model
 
     protected $casts = [
         'read_at' => 'datetime',
+    ];
+
+    protected $dispatchesEvents = [
+        'created' => NotificationCreated::class,
     ];
 
     public function user(): BelongsTo

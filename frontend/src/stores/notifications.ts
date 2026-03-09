@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../api/axios'
+import echo from '../plugins/echo'
+import { useAuthStore } from './auth'
 
 export interface AppNotification {
   id: number
@@ -16,6 +18,7 @@ export interface AppNotification {
 export const useNotificationStore = defineStore('notifications', () => {
   const unreadCount = ref(0)
   const recent = ref<AppNotification[]>([])
+  let echoChannel: ReturnType<typeof echo.private> | null = null
   let pollInterval: ReturnType<typeof setInterval> | null = null
 
   async function fetchUnreadCount() {
@@ -58,22 +61,57 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
+  function subscribeToEcho(userId: number) {
+    if (echoChannel) return
+
+    echoChannel = echo.private(`App.User.${userId}`)
+    echoChannel.listen('.notification.created', (payload: AppNotification) => {
+      recent.value.unshift(payload)
+      if (recent.value.length > 5) recent.value.pop()
+      unreadCount.value += 1
+    })
+  }
+
+  function unsubscribeFromEcho() {
+    if (echoChannel) {
+      echo.leave(`App.User.${useAuthStore().user?.id}`)
+      echoChannel = null
+    }
+  }
+
   function startPolling() {
     fetchUnreadCount()
     fetchRecent()
+
+    const auth = useAuthStore()
+    if (auth.user?.id) {
+      subscribeToEcho(auth.user.id)
+    }
+
+    // Keep a fallback poll every 5 minutes in case WS drops
     if (!pollInterval) {
       pollInterval = setInterval(() => {
         fetchUnreadCount()
-      }, 60_000)
+      }, 300_000)
     }
   }
 
   function stopPolling() {
+    unsubscribeFromEcho()
     if (pollInterval) {
       clearInterval(pollInterval)
       pollInterval = null
     }
   }
 
-  return { unreadCount, recent, fetchUnreadCount, fetchRecent, markRead, markAllRead, startPolling, stopPolling }
+  return {
+    unreadCount,
+    recent,
+    fetchUnreadCount,
+    fetchRecent,
+    markRead,
+    markAllRead,
+    startPolling,
+    stopPolling,
+  }
 })

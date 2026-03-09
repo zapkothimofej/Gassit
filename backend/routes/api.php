@@ -28,6 +28,7 @@ use App\Http\Controllers\ReferenceItemController;
 use App\Http\Controllers\LlmAccessCodeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
@@ -40,7 +41,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify']);
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api-write'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -51,11 +52,11 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware(['auth:sanctum'])->prefix('parks')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api-read'])->prefix('parks')->group(function () {
     Route::get('/', [ParkController::class, 'index']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->prefix('parks')->group(function () {
     Route::post('/', [ParkController::class, 'store']);
     Route::put('/{id}', [ParkController::class, 'update']);
     Route::delete('/{id}', [ParkController::class, 'destroy']);
@@ -64,25 +65,25 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks')-
     Route::put('/{id}/settings', [ParkController::class, 'updateSettings']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks/{parkId}/unit-types')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->prefix('parks/{parkId}/unit-types')->group(function () {
     Route::get('/', [UnitTypeController::class, 'index']);
     Route::post('/', [UnitTypeController::class, 'store']);
     Route::put('/{id}', [UnitTypeController::class, 'update']);
     Route::delete('/{id}', [UnitTypeController::class, 'destroy']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('unit-types')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->prefix('unit-types')->group(function () {
     Route::post('/{id}/floor-plan', [UnitTypeController::class, 'uploadFloorPlan']);
     Route::post('/{id}/features', [UnitTypeController::class, 'syncFeatures']);
     Route::get('/{id}/availability', [UnitTypeController::class, 'availability']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('parks/{parkId}/units')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager', 'throttle:api-write'])->prefix('parks/{parkId}/units')->group(function () {
     Route::get('/', [UnitController::class, 'index']);
     Route::post('/', [UnitController::class, 'store']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('units')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager', 'throttle:api-write'])->prefix('units')->group(function () {
     Route::get('/{id}', [UnitController::class, 'show']);
     Route::put('/{id}', [UnitController::class, 'update']);
     Route::delete('/{id}', [UnitController::class, 'destroy']);
@@ -92,29 +93,30 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->p
     Route::get('/{id}/history', [UnitController::class, 'history']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks/{parkId}/discount-rules')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->prefix('parks/{parkId}/discount-rules')->group(function () {
     Route::get('/', [DiscountRuleController::class, 'index']);
     Route::post('/', [DiscountRuleController::class, 'store']);
     Route::put('/{id}', [DiscountRuleController::class, 'update']);
     Route::delete('/{id}', [DiscountRuleController::class, 'destroy']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('parks/{parkId}/insurance-options')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->prefix('parks/{parkId}/insurance-options')->group(function () {
     Route::get('/', [InsuranceOptionController::class, 'index']);
     Route::post('/', [InsuranceOptionController::class, 'store']);
     Route::put('/{id}', [InsuranceOptionController::class, 'update']);
     Route::delete('/{id}', [InsuranceOptionController::class, 'destroy']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('unit-types/{id}')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-read'])->prefix('unit-types/{id}')->group(function () {
     Route::get('/discount-rules', [DiscountRuleController::class, 'forUnitType']);
     Route::get('/insurance-options', [InsuranceOptionController::class, 'forUnitType']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('customers')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker', 'throttle:api-write'])->prefix('customers')->group(function () {
     Route::get('/blacklist', [CustomerController::class, 'blacklistIndex']);
     Route::get('/', [CustomerController::class, 'index']);
     Route::post('/', [CustomerController::class, 'store']);
+    Route::get('/{id}', [CustomerController::class, 'show']);
     Route::put('/{id}', [CustomerController::class, 'update']);
     Route::delete('/{id}', [CustomerController::class, 'destroy']);
     Route::post('/{id}/documents', [CustomerController::class, 'uploadDocument']);
@@ -126,7 +128,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
     Route::delete('/{id}/blacklist', [CustomerController::class, 'removeBlacklist']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('applications')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker', 'throttle:api-write'])->prefix('applications')->group(function () {
     Route::get('/', [ApplicationController::class, 'index']);
     Route::get('/{id}', [ApplicationController::class, 'show']);
     Route::post('/', [ApplicationController::class, 'store']);
@@ -139,12 +141,12 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
     Route::post('/{id}/convert', [ApplicationController::class, 'convert']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('parks/{parkId}/waiting-list')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker', 'throttle:api-write'])->prefix('parks/{parkId}/waiting-list')->group(function () {
     Route::get('/', [WaitingListController::class, 'index']);
     Route::post('/', [WaitingListController::class, 'store']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('waiting-list')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker', 'throttle:api-write'])->prefix('waiting-list')->group(function () {
     Route::get('/', [WaitingListController::class, 'globalIndex']);
     Route::put('/{id}', [WaitingListController::class, 'update']);
     Route::delete('/{id}', [WaitingListController::class, 'destroy']);
@@ -153,11 +155,11 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
 });
 
 // Contracts
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('applications')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker', 'throttle:api-write'])->prefix('applications')->group(function () {
     Route::post('/{id}/contract', [ContractController::class, 'generateFromApplication']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('contracts')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker', 'throttle:api-write'])->prefix('contracts')->group(function () {
     Route::get('/', [ContractController::class, 'index']);
     Route::get('/{id}', [ContractController::class, 'show']);
     Route::put('/{id}', [ContractController::class, 'update']);
@@ -171,7 +173,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
 Route::post('/webhooks/esign', [ContractController::class, 'esignWebhook']);
 
 // Deposits
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant', 'throttle:api-write'])->group(function () {
     Route::get('/deposits', [DepositController::class, 'index']);
     Route::get('/contracts/{id}/deposit', [DepositController::class, 'show']);
     Route::put('/deposits/{id}/received', [DepositController::class, 'markReceived']);
@@ -180,7 +182,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
 });
 
 // Invoices
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant', 'throttle:api-write'])->group(function () {
     Route::get('/invoices/datev-export', [InvoiceController::class, 'datevExport']);
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
@@ -193,7 +195,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
 });
 
 // Payments
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant', 'throttle:api-write'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::post('/payments/{id}/refund', [PaymentController::class, 'refund']);
 });
@@ -201,7 +203,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accou
 // Mollie webhook (public — verified by Mollie signature in production)
 Route::post('/webhooks/mollie', [PaymentController::class, 'mollieWebhook']);
 
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin', 'throttle:api-write'])->prefix('admin')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{id}', [UserController::class, 'update']);
@@ -216,7 +218,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 });
 
 // Damage reports
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker'])->prefix('damage-reports')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker', 'throttle:api-write'])->prefix('damage-reports')->group(function () {
     Route::get('/', [DamageReportController::class, 'index']);
     Route::get('/{id}', [DamageReportController::class, 'show']);
     Route::post('/', [DamageReportController::class, 'store']);
@@ -228,7 +230,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_
     Route::post('/{id}/invoice', [DamageReportController::class, 'generateInvoice']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->prefix('debtors')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant', 'throttle:api-write'])->prefix('debtors')->group(function () {
     Route::get('/', [DunningController::class, 'debtors']);
     Route::post('/{customerId}/pause', [DunningController::class, 'pause']);
     Route::post('/{customerId}/escalate', [DunningController::class, 'escalate']);
@@ -236,7 +238,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->prefi
 });
 
 // Electricity meters
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker', 'throttle:api-write'])->group(function () {
     Route::get('/units/{unitId}/meters', [ElectricityMeterController::class, 'index']);
     Route::post('/units/{unitId}/meters', [ElectricityMeterController::class, 'store']);
     Route::put('/meters/{id}', [ElectricityMeterController::class, 'update']);
@@ -247,13 +249,13 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_
 });
 
 // Electricity pricing
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->group(function () {
     Route::get('/parks/{parkId}/electricity-pricing', [ElectricityMeterController::class, 'pricingIndex']);
     Route::post('/parks/{parkId}/electricity-pricing', [ElectricityMeterController::class, 'pricingStore']);
 });
 
 // Vendors
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->prefix('vendors')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager', 'throttle:api-write'])->prefix('vendors')->group(function () {
     Route::get('/', [VendorController::class, 'index']);
     Route::post('/', [VendorController::class, 'store']);
     Route::get('/{id}', [VendorController::class, 'show']);
@@ -267,7 +269,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager'])->p
 });
 
 // Tasks
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker,office_worker'])->prefix('tasks')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_worker,office_worker', 'throttle:api-write'])->prefix('tasks')->group(function () {
     Route::get('/dashboard', [TaskController::class, 'dashboard']);
     Route::get('/calendar', [TaskController::class, 'calendar']);
     Route::get('/', [TaskController::class, 'index']);
@@ -279,7 +281,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,park_
 });
 
 // Mail templates
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->prefix('mail-templates')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker', 'throttle:api-write'])->prefix('mail-templates')->group(function () {
     Route::get('/', [MailController::class, 'templatesIndex']);
     Route::post('/', [MailController::class, 'templatesStore']);
     Route::put('/{id}', [MailController::class, 'templatesUpdate']);
@@ -287,7 +289,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->pr
 });
 
 // Mail send/preview/log
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->prefix('mail')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker', 'throttle:api-write'])->prefix('mail')->group(function () {
     Route::post('/recipient-count', [MailController::class, 'recipientCount']);
     Route::post('/preview', [MailController::class, 'preview']);
     Route::post('/send', [MailController::class, 'send']);
@@ -297,7 +299,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,office_worker'])->pr
 });
 
 // Document templates
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('document-templates')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->prefix('document-templates')->group(function () {
     Route::get('/', [DocumentTemplateController::class, 'index']);
     Route::post('/', [DocumentTemplateController::class, 'store']);
     Route::put('/{id}', [DocumentTemplateController::class, 'update']);
@@ -306,24 +308,24 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->prefix('document
 });
 
 // System settings
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('system-settings')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin', 'throttle:api-write'])->prefix('system-settings')->group(function () {
     Route::get('/', [SystemSettingController::class, 'index']);
     Route::put('/', [SystemSettingController::class, 'update']);
     Route::get('/{key}', [SystemSettingController::class, 'show']);
 });
 
 // Reference items
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker,customer_service'])->prefix('reference-items')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker,customer_service', 'throttle:api-read'])->prefix('reference-items')->group(function () {
     Route::get('/', [ReferenceItemController::class, 'index']);
 });
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('reference-items')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin', 'throttle:api-write'])->prefix('reference-items')->group(function () {
     Route::post('/', [ReferenceItemController::class, 'store']);
     Route::put('/{id}', [ReferenceItemController::class, 'update']);
     Route::delete('/{id}', [ReferenceItemController::class, 'destroy']);
 });
 
 // LLM access codes
-Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager', 'throttle:api-write'])->group(function () {
     Route::get('/parks/{parkId}/access-codes', [LlmAccessCodeController::class, 'index']);
     Route::post('/parks/{parkId}/access-codes', [LlmAccessCodeController::class, 'store']);
     Route::put('/parks/{parkId}/access-codes/{id}', [LlmAccessCodeController::class, 'update']);
@@ -331,8 +333,11 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager'])->group(function (
     Route::post('/parks/{parkId}/access-codes/sync', [LlmAccessCodeController::class, 'sync']);
 });
 
+// Broadcasting auth (Reverb private channels via Sanctum token)
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
+
 // Notifications
-Route::middleware(['auth:sanctum'])->prefix('notifications')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api-read'])->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index']);
     Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/read-all', [NotificationController::class, 'markAllRead']);
@@ -340,38 +345,38 @@ Route::middleware(['auth:sanctum'])->prefix('notifications')->group(function () 
 });
 
 // Global search
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api-read'])->group(function () {
     Route::get('/search', [SearchController::class, 'search']);
 });
 
 // Dashboard
-Route::middleware(['auth:sanctum'])->prefix('dashboard')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api-read'])->prefix('dashboard')->group(function () {
     Route::get('/kpis', [DashboardController::class, 'kpis']);
     Route::get('/mahnstuffe', [DashboardController::class, 'mahnstuffe']);
     Route::get('/revenue', [DashboardController::class, 'revenue']);
 });
 
 // Reports
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant,office_worker,customer_service'])->prefix('reports')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,accountant,office_worker,customer_service', 'throttle:api-read'])->prefix('reports')->group(function () {
     Route::get('/applications', [ReportController::class, 'applications']);
     Route::get('/contracts', [ReportController::class, 'contracts']);
     Route::get('/customers', [ReportController::class, 'customers']);
     Route::get('/units', [ReportController::class, 'units']);
     Route::get('/finance', [ReportController::class, 'finance']);
 });
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('reports')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin', 'throttle:api-read'])->prefix('reports')->group(function () {
     Route::get('/audit', [ReportController::class, 'audit']);
 });
 
 // Audit logs (admin only)
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('audit-logs')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin', 'throttle:api-read'])->prefix('audit-logs')->group(function () {
     Route::get('/', [AuditLogController::class, 'index']);
     Route::get('/export', [AuditLogController::class, 'export']);
     Route::get('/{id}', [AuditLogController::class, 'show']);
 });
 
 // Revenue targets
-Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,main_manager,accountant', 'throttle:api-write'])->group(function () {
     Route::get('/parks/{parkId}/revenue-targets', [RevenueTargetController::class, 'index']);
     Route::post('/parks/{parkId}/revenue-targets', [RevenueTargetController::class, 'store']);
     Route::put('/revenue-targets/{id}', [RevenueTargetController::class, 'update']);

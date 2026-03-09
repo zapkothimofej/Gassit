@@ -15,16 +15,20 @@ services:
       - MAIL_HOST=mailhog
       - AWS_ENDPOINT=http://minio:9000
       - AWS_USE_PATH_STYLE_ENDPOINT=true
+      - SCOUT_DRIVER=meilisearch
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - MEILISEARCH_KEY=masterKey
     depends_on:
       - mysql
       - redis
+      - meilisearch
     networks:
       - gassit
 
-  queue:
+  horizon:
     build:
       context: ./backend
-    command: php artisan queue:work --tries=3
+    command: php artisan horizon
     volumes:
       - ./backend:/var/www
       - /var/www/vendor
@@ -38,8 +42,49 @@ services:
       - MAIL_HOST=mailhog
       - AWS_ENDPOINT=http://minio:9000
       - AWS_USE_PATH_STYLE_ENDPOINT=true
+      - SCOUT_DRIVER=meilisearch
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - MEILISEARCH_KEY=masterKey
+      - BROADCAST_CONNECTION=reverb
+      - REVERB_HOST=reverb
+      - REVERB_PORT=8080
+      - REVERB_SCHEME=http
+      - REVERB_APP_ID=${REVERB_APP_ID:-gassit}
+      - REVERB_APP_KEY=${REVERB_APP_KEY:-gassit-key}
+      - REVERB_APP_SECRET=${REVERB_APP_SECRET:-gassit-secret}
     depends_on:
       - mysql
+      - redis
+      - meilisearch
+    networks:
+      - gassit
+
+  reverb:
+    build:
+      context: ./backend
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor
+    environment:
+      - APP_ENV=local
+      - DB_HOST=mysql
+      - DB_DATABASE=${DB_DATABASE:-gassit}
+      - DB_USERNAME=${DB_USERNAME:-gassit}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - BROADCAST_CONNECTION=reverb
+      - REVERB_SERVER_HOST=0.0.0.0
+      - REVERB_SERVER_PORT=8080
+      - REVERB_HOST=reverb
+      - REVERB_PORT=8080
+      - REVERB_SCHEME=http
+      - REVERB_APP_ID=${REVERB_APP_ID:-gassit}
+      - REVERB_APP_KEY=${REVERB_APP_KEY:-gassit-key}
+      - REVERB_APP_SECRET=${REVERB_APP_SECRET:-gassit-secret}
+    ports:
+      - "8080:8080"
+    depends_on:
       - redis
     networks:
       - gassit
@@ -111,9 +156,21 @@ services:
     networks:
       - gassit
 
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: masterKey
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - gassit
+
 volumes:
   mysql_data:
   minio_data:
+  meilisearch_data:
 
 networks:
   gassit:
