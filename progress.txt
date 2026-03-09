@@ -726,3 +726,9 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Activity timeline from audit-logs
 - vue-tsc --noEmit typecheck passes
 ---
+
+## 2026-03-09 - US-051
+- Created BlacklistView.vue: table with customer/reason/added by/added at/removed at/status, active-only toggle, remove modal with reason, add modal with customer search
+- Added /customers/blacklist route BEFORE /customers/:id in router
+- vue-tsc --noEmit typecheck passes
+---
