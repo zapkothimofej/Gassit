@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import WorkroomMenu from './WorkroomMenu.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -59,6 +60,7 @@ const visibleItems = computed(() =>
         <span class="nav-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
+    <WorkroomMenu />
   </aside>
 </template>
 
