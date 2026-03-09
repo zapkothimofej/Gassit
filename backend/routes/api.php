@@ -145,6 +145,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
 });
 
 Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,office_worker'])->prefix('waiting-list')->group(function () {
+    Route::get('/', [WaitingListController::class, 'globalIndex']);
     Route::put('/{id}', [WaitingListController::class, 'update']);
     Route::delete('/{id}', [WaitingListController::class, 'destroy']);
     Route::post('/{id}/notify', [WaitingListController::class, 'notify']);

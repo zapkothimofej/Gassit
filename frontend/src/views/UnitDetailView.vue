@@ -285,7 +285,7 @@ const loadingDamage = ref(false)
 async function loadDamage() {
   loadingDamage.value = true
   try {
-    const res = await api.get('/api/damage-reports', { params: { unit_id: unitId } })
+    const res = await api.get('/damage-reports', { params: { unit_id: unitId } })
     damageReports.value = res.data.data ?? res.data ?? []
   } finally {
     loadingDamage.value = false

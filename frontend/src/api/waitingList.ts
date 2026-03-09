@@ -27,7 +27,7 @@ export function addToWaitingList(data: {
   priority_score?: number
   notes?: string
 }) {
-  return api.post<WaitingListEntry>('/waiting-list', data)
+  return api.post<WaitingListEntry>('/parks/' + data.park_id + '/waiting-list', data)
 }
 
 export function updateWaitingListEntry(id: number, data: { priority_score?: number; notes?: string }) {
