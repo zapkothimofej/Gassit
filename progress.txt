@@ -900,3 +900,20 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - GET /api/system-settings returns flat array [{id, key, value, description}]
   - PUT /api/system-settings expects {settings: [{key, value}]}
 ---
+
+## 2026-03-09 - US-071
+- Created AdminUsersView.vue at /admin/users: user table with role badge, active status, parks count, edit/deactivate actions
+- Create User modal: name, email, role select, parks multi-select checkboxes, active toggle; POST /admin/users then POST /admin/users/{id}/parks
+- Edit User modal: same fields + Reset Password button (POST /auth/forgot-password)
+- Deactivate: confirmation dialog → DELETE /admin/users/{id}
+- Created AdminEmployeesView.vue at /admin/employees: employee table with name/role_title/park/contact/active
+- Create/Edit Employee modal: all fields + park select + optional linked user account select
+- Delete Employee: confirmation dialog → DELETE /admin/employees/{id}
+- Added /admin/users and /admin/employees routes to router (admin only)
+- vue-tsc --noEmit typecheck passes
+- Files changed: AdminUsersView.vue (new), AdminEmployeesView.vue (new), router/index.ts
+- **Learnings for future iterations:**
+  - Park multi-select uses checkbox list pattern (not FormSelect) for multi-selection
+  - Employee form.park_id/user_id use '' as null placeholder in FormSelect (converted to null on save)
+  - watch() import can be combined with onMounted for reactive option lists from async data
+---
