@@ -269,4 +269,16 @@ function parkName(id: number) {
 .cal-date { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.375rem; }
 .cal-event { font-size: 0.78rem; background: #dbeafe; color: #1e40af; border-radius: 4px; padding: 0.2rem 0.4rem; margin-top: 0.2rem; cursor: pointer; }
 .cal-event:hover { background: #bfdbfe; }
+
+@media (max-width: 1023px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .skeleton-grid { grid-template-columns: repeat(2, 1fr); }
+  .row-2 { grid-template-columns: 1fr; }
+  .kanban { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 639px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .skeleton-grid { grid-template-columns: 1fr; }
+}
 </style>

@@ -54,6 +54,20 @@ function close() {
   flex-direction: column;
 }
 
+@media (max-width: 639px) {
+  .modal {
+    min-width: unset;
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+  }
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import AppSidebar from '../components/AppSidebar.vue'
 import AppTopBar from '../components/AppTopBar.vue'
@@ -9,6 +9,12 @@ import { useToastStore } from '../stores/toast'
 const notificationStore = useNotificationStore()
 const { toasts } = useToastStore()
 
+const sidebarCollapsed = ref(window.innerWidth < 1024)
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
 onMounted(() => {
   notificationStore.startPolling()
 })
@@ -16,9 +22,9 @@ onMounted(() => {
 
 <template>
   <div class="app-layout">
-    <AppSidebar />
+    <AppSidebar :collapsed="sidebarCollapsed" @toggle="toggleSidebar" />
     <div class="app-main">
-      <AppTopBar />
+      <AppTopBar @toggle-sidebar="toggleSidebar" />
       <main class="app-content">
         <RouterView />
       </main>
@@ -52,12 +58,20 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .app-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.5rem;
+}
+
+@media (max-width: 639px) {
+  .app-content {
+    padding: 1rem;
+  }
 }
 
 .toast-container {
@@ -80,6 +94,7 @@ onMounted(() => {
   font-weight: 500;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   animation: toast-in 0.2s ease;
+  white-space: nowrap;
 }
 
 .global-toast.success { background: #22c55e; color: #fff; }

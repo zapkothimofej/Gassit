@@ -5,6 +5,8 @@ import { useAuthStore } from '../stores/auth'
 import { useNotificationStore } from '../stores/notifications'
 import { globalSearch, type SearchResults } from '../api/search'
 
+const emit = defineEmits<{ (e: 'toggle-sidebar'): void }>()
+
 const auth = useAuthStore()
 const notificationStore = useNotificationStore()
 const router = useRouter()
@@ -168,10 +170,11 @@ onUnmounted(() => {
 <template>
   <header class="topbar">
     <div class="topbar-left">
+      <button class="mobile-hamburger" title="Menü" @click="emit('toggle-sidebar')">☰</button>
       <select
         v-if="auth.parks.length > 0"
         v-model="selectedParkId"
-        class="park-selector"
+        class="park-selector hide-mobile"
       >
         <option
           v-for="park in auth.parks"
@@ -182,7 +185,7 @@ onUnmounted(() => {
         </option>
       </select>
 
-      <div class="search-wrapper">
+      <div class="search-wrapper hide-mobile">
         <div class="search-input-row">
           <span class="search-icon">🔍</span>
           <input
@@ -302,6 +305,35 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.mobile-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.mobile-hamburger:hover {
+  color: #1e293b;
+}
+
+@media (max-width: 639px) {
+  .mobile-hamburger {
+    display: block;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .user-name {
+    display: none;
+  }
 }
 
 .park-selector {
