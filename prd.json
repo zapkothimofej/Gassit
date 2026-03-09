@@ -1497,7 +1497,7 @@
         "Typecheck passes"
       ],
       "priority": 86,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1513,7 +1513,7 @@
         "Typecheck passes"
       ],
       "priority": 87,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1531,7 +1531,7 @@
         "Typecheck passes"
       ],
       "priority": 88,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1548,7 +1548,7 @@
         "Typecheck passes"
       ],
       "priority": 89,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1562,7 +1562,7 @@
         "Typecheck passes"
       ],
       "priority": 90,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1578,7 +1578,7 @@
         "Typecheck passes"
       ],
       "priority": 91,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1592,7 +1592,7 @@
         "Typecheck passes"
       ],
       "priority": 92,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]

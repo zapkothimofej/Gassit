@@ -1108,3 +1108,69 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Contract status enum values include: active, terminated_by_customer, terminated_by_lfg, draft, awaiting_signature, signed, declined, expired
   - unique(['contract_id', 'billing_month']) provides DB-level idempotency guarantee
 ---
+
+## 2026-03-09 - US-086
+- What was implemented: E2E contract termination → final invoice → deposit return flow
+- Files changed:
+  - backend/app/Models/Contract.php: added final_invoice_waived to fillable/casts
+  - backend/app/Models/DamageReport.php: added is_termination_inspection boolean cast
+  - backend/app/Http/Controllers/ContractController.php: terminate() now creates pro-rated final invoice, sets unit to maintenance, creates termination inspection DamageReport
+  - backend/app/Http/Controllers/DamageReportController.php: resolving termination inspection sets unit free and dispatches NotifyWaitingListEntries
+  - backend/app/Http/Controllers/DepositController.php: processReturn() blocks if final invoice unpaid (unless final_invoice_waived=true)
+  - backend/database/migrations/2026_03_09_000004_extend_billing_month_length.php: extended billing_month varchar from 7 to 20 to accommodate '-final' suffix
+  - backend/tests/Feature/Contract/TerminationFlowTest.php: 7 integration tests
+- **Learnings for future iterations:**
+  - billing_month for final invoices uses format 'YYYY-MM-final' (13 chars), needed column extension from varchar(7) to varchar(20)
+  - DamageReport transitions: reported → in_assessment → repair_ordered → in_repair → resolved (not 'open')
+  - Status update endpoint for damage reports is PUT (not PATCH): PUT /api/damage-reports/{id}/status
+  - final_invoice_waived is a boolean on contracts allowing deposit return even without paid final invoice
+---
+
+## 2026-03-09 - US-087
+- What was implemented: Performance caching and DB indexes
+- Files changed:
+  - backend/database/migrations/2026_03_09_000005_add_performance_indexes.php: composite indexes on customers, units, invoices, applications, contracts
+  - backend/tests/Feature/Dashboard/DashboardPerformanceTest.php: response time <200ms and cache hit tests
+- **Learnings for future iterations:**
+  - Dashboard KPI caching was already in DashboardController::kpis() with 30s TTL
+  - All major list endpoints already paginated with paginate(20)
+  - Application/invoice list endpoints already eager-load relations
+---
+
+## 2026-03-09 - US-088
+- What was implemented: Security hardening
+- Files changed:
+  - routes/api.php: throttle:10,1 on login
+  - CustomerController: max 10MB for documents, only pdf/jpeg/jpg/png
+  - DamageReportController: max 10MB, putFile() for UUID names
+  - MailController: sanitizeHtml() with strip_tags allowlist before storing body_html
+  - PaymentController: Mollie webhook HMAC sig check if MOLLIE_WEBHOOK_SECRET env set
+  - config/services.php: added mollie.webhook_secret from env
+  - config/cors.php: CORS restricted to FRONTEND_URL env var
+- **Learnings:**
+  - Laravel's putFile() generates UUID filenames automatically; put() does not
+  - throttle:10,1 = 10 requests per 1 minute per IP
+  - CORS config goes in config/cors.php, Laravel 11 picks it up automatically
+---
+
+## 2026-03-09 - US-089
+- What was implemented: GDPR compliance
+- Files changed:
+  - CustomerController: gdprDelete uses '[gelöscht]', also wipes address/city/zip; consent auto-set on create; added dataExport()
+  - routes/api.php: GET /customers/{id}/data-export
+  - migration: data_retention_years=10 system setting
+  - CustomerTest: updated GDPR placeholder assertion
+- **Learnings:**
+  - gdpr_consent_at field already existed in customers table from initial migration
+  - System settings table uses 'key' unique constraint with insertOrIgnore
+---
+
+## 2026-03-09 - US-090 to US-092
+- US-090: DemoSeeder created with full dataset for all modules; DatabaseSeeder delegates to it; invoice numbers use date prefix to avoid duplicates on re-run
+- US-091: Docker config (backend PHP 8.3-fpm, frontend Node 20 + nginx), docker-compose with mysql/redis/mailhog/minio, .env.example with all vars, GitHub Actions CI
+- US-092: dedoc/scramble installed for OpenAPI 3.0 auto-docs; AdminDocsAccess middleware restricts to admin in production; /api/documentation redirects to /docs/api
+- **Learnings:**
+  - Scramble auto-generates docs from route reflection with no annotations needed
+  - dedoc/scramble needs --ignore-platform-req=ext-gd on Windows dev (ext-gd not enabled in CLI)
+  - DemoSeeder invoice numbers need uniqueness per run (use date prefix)
+---
