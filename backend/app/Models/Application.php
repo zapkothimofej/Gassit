@@ -5,10 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Scout\Searchable;
 
 class Application extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
+
+    public function toSearchableArray(): array
+    {
+        $customer = $this->customer;
+        return [
+            'id' => $this->id,
+            'status' => $this->status,
+            'park_id' => $this->park_id,
+            'customer_name' => $customer
+                ? trim("{$customer->first_name} {$customer->last_name}")
+                : null,
+        ];
+    }
     protected $fillable = [
         'park_id',
         'customer_id',

@@ -2,15 +2,27 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedString;
 use App\Models\Invoice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Searchable;
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'full_name' => trim("{$this->first_name} {$this->last_name}"),
+            'email' => $this->email,
+            'status' => $this->status,
+        ];
+    }
 
     protected $fillable = [
         'type',
@@ -23,6 +35,7 @@ class Customer extends Model
         'zip',
         'country',
         'email',
+        'email_hash',
         'phone',
         'id_number',
         'tax_id',
@@ -36,11 +49,27 @@ class Customer extends Model
     protected function casts(): array
     {
         return [
-            'dob' => 'date',
+            'first_name'           => EncryptedString::class,
+            'last_name'            => EncryptedString::class,
+            'email'                => EncryptedString::class,
+            'phone'                => EncryptedString::class,
+            'dob'                  => EncryptedString::class,
+            'address'              => EncryptedString::class,
+            'id_number'            => EncryptedString::class,
             'dunning_paused_until' => 'datetime',
-            'gdpr_consent_at' => 'datetime',
-            'gdpr_deleted_at' => 'datetime',
+            'gdpr_consent_at'      => 'datetime',
+            'gdpr_deleted_at'      => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Customer $customer) {
+            if ($customer->isDirty('email') && $customer->getAttributes()['email'] !== null) {
+                $rawEmail = $customer->email;
+                $customer->email_hash = hash('sha256', strtolower($rawEmail));
+            }
+        });
     }
 
     public function blacklistEntries(): HasMany
@@ -62,6 +91,7 @@ class Customer extends Model
     {
         return $this->hasMany(Application::class);
     }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);

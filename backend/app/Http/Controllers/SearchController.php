@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 class SearchController extends Controller
 {
@@ -21,11 +22,44 @@ class SearchController extends Controller
         $parkId = $request->query('park_id');
         $user = $request->user();
 
-        // Validate park access if park_id provided
         if ($parkId && !ParkScopeMiddleware::hasAccessToPark($user, (int) $parkId)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
+        try {
+            return $this->scoutSearch((string) $q, $parkId ? (int) $parkId : null);
+        } catch (Throwable) {
+            return $this->likeSearch((string) $q, $parkId ? (int) $parkId : null);
+        }
+    }
+
+    private function scoutSearch(string $q, ?int $parkId): JsonResponse
+    {
+        $customers = Customer::search($q);
+        $units = Unit::search($q);
+        $applications = Application::search($q);
+        $contracts = Contract::search($q);
+        $invoices = Invoice::search($q);
+
+        if ($parkId) {
+            $customers->where('park_id', $parkId);
+            $units->where('park_id', $parkId);
+            $applications->where('park_id', $parkId);
+            $contracts->where('park_id', $parkId);
+            $invoices->where('park_id', $parkId);
+        }
+
+        return response()->json([
+            'customers' => $customers->take(5)->get(['id', 'first_name', 'last_name', 'email', 'company_name', 'type']),
+            'units' => $units->take(5)->get(['id', 'unit_number', 'park_id', 'status']),
+            'applications' => $applications->take(5)->get()->load('customer:id,first_name,last_name'),
+            'contracts' => $contracts->take(5)->get(['id', 'customer_id', 'unit_id', 'status']),
+            'invoices' => $invoices->take(5)->get(['id', 'invoice_number', 'customer_id', 'park_id', 'status', 'total_amount']),
+        ]);
+    }
+
+    private function likeSearch(string $q, ?int $parkId): JsonResponse
+    {
         $customers = Customer::where(function ($query) use ($q) {
             $query->where('first_name', 'like', "%{$q}%")
                 ->orWhere('last_name', 'like', "%{$q}%")
