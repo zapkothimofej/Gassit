@@ -17,6 +17,7 @@ class Invoice extends Model
         'customer_id',
         'park_id',
         'invoice_number',
+        'billing_month',
         'issue_date',
         'due_date',
         'subtotal',

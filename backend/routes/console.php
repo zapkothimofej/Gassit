@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\GenerateMonthlyInvoicesCommand;
 use App\Console\Commands\ProcessDunning;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -10,3 +11,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command(ProcessDunning::class)->daily();
+Schedule::command(GenerateMonthlyInvoicesCommand::class)->monthlyOn(1, '06:00');

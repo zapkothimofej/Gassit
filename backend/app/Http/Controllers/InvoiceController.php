@@ -114,9 +114,15 @@ class InvoiceController extends Controller
 
     public function generateMonthly(Request $request): JsonResponse
     {
-        GenerateMonthlyInvoices::dispatch();
+        if ($request->user()?->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
-        return response()->json(['message' => 'Monthly invoice generation queued.']);
+        $month = $request->input('month', now()->format('Y-m'));
+
+        GenerateMonthlyInvoices::dispatch($month);
+
+        return response()->json(['message' => 'Monthly invoice generation queued.', 'month' => $month]);
     }
 
     public function pdf(int $id): Response

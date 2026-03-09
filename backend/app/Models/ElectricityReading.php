@@ -16,6 +16,7 @@ class ElectricityReading extends Model
         'photo_path',
         'recorded_by',
         'consumption',
+        'invoice_id',
     ];
 
     protected $casts = [
