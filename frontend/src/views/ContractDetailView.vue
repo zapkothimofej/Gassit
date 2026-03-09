@@ -31,7 +31,6 @@ const invoices = ref<Invoice[]>([])
 const loading = ref(true)
 const activeTab = ref<'info' | 'invoices'>('info')
 
-const STATUSES = ['draft', 'awaiting_signature', 'signed', 'active', 'terminated_by_customer', 'terminated_by_lfg', 'expired', 'declined']
 const STEPPER = ['draft', 'awaiting_signature', 'signed', 'active']
 
 const stepperIndex = computed(() => {
@@ -104,7 +103,8 @@ async function doRenew() {
     const res = await renewContract(contractId, renewForm.value)
     showRenewModal.value = false
     showToast('Contract renewed.')
-    router.push('/contracts/' + (res.data as Record<string, Record<string, number>>).new_contract.id)
+    const newId = (res.data as Record<string, Record<string, number>>).new_contract?.id
+    if (newId) router.push('/contracts/' + newId)
   } finally {
     renewing.value = false
   }

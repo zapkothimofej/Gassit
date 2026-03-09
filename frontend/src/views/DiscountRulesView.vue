@@ -32,8 +32,9 @@ function showToast(msg: string) {
 onMounted(async () => {
   const pr = await fetchParks()
   parks.value = pr.data.data ?? []
-  if (parks.value.length) {
-    selectedParkId.value = parks.value[0].id
+  const firstPark = parks.value[0]
+  if (firstPark) {
+    selectedParkId.value = firstPark.id
     await loadRules()
   }
 })

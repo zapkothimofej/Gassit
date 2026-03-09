@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import api from '../api/axios'
 import { fetchParks } from '../api/parks'
 
@@ -33,8 +33,9 @@ function showToast(msg: string) {
 onMounted(async () => {
   const pr = await fetchParks()
   parks.value = pr.data.data ?? []
-  if (parks.value.length) {
-    selectedParkId.value = parks.value[0].id
+  const firstPark = parks.value[0]
+  if (firstPark) {
+    selectedParkId.value = firstPark.id
     await loadAll()
   }
 })
@@ -79,7 +80,7 @@ async function loadAll() {
 
 async function saveTarget(monthIdx: number) {
   const t = targets.value[monthIdx]
-  if (!selectedParkId.value) return
+  if (!selectedParkId.value || !t) return
   savingMonth.value = t.month
   try {
     await api.post('/parks/' + selectedParkId.value + '/revenue-targets', {
@@ -95,6 +96,7 @@ async function saveTarget(monthIdx: number) {
 
 function pct(monthIdx: number) {
   const t = targets.value[monthIdx]
+  if (!t) return null
   const target = parseFloat(t.target_amount) || 0
   const actual = actuals.value[monthIdx + 1] ?? 0
   if (target === 0) return null
@@ -128,14 +130,14 @@ function pct(monthIdx: number) {
         <div class="target-field">
           <label class="field-label">Target (€)</label>
           <input
-            v-model="targets[i].target_amount"
+            v-model="targets[i]!.target_amount"
             type="number"
             min="0"
             step="100"
             class="target-input"
             @blur="saveTarget(i)"
           />
-          <div v-if="savingMonth === targets[i].month" class="saving-text">Saving...</div>
+          <div v-if="savingMonth === targets[i]!.month" class="saving-text">Saving...</div>
         </div>
         <div class="actual-row">
           <div class="actual-label">Actual</div>

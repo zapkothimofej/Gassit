@@ -26,6 +26,10 @@ class SearchController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
+        if (config('scout.driver') === 'null' || config('scout.driver') === null) {
+            return $this->likeSearch((string) $q, $parkId ? (int) $parkId : null);
+        }
+
         try {
             return $this->scoutSearch((string) $q, $parkId ? (int) $parkId : null);
         } catch (Throwable) {
@@ -60,12 +64,9 @@ class SearchController extends Controller
 
     private function likeSearch(string $q, ?int $parkId): JsonResponse
     {
-        $customers = Customer::where(function ($query) use ($q) {
-            $query->where('first_name', 'like', "%{$q}%")
-                ->orWhere('last_name', 'like', "%{$q}%")
-                ->orWhere('email', 'like', "%{$q}%")
-                ->orWhere('company_name', 'like', "%{$q}%");
-        });
+        // Note: first_name, last_name, email are PII-encrypted — only company_name supports LIKE fallback.
+        // Full-text search on encrypted fields requires Meilisearch (production path).
+        $customers = Customer::where('company_name', 'like', "%{$q}%");
 
         $units = Unit::where('unit_number', 'like', "%{$q}%");
 

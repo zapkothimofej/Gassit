@@ -27,7 +27,7 @@ interface Task {
 const tasks = ref<Task[]>([])
 const loading = ref(false)
 const parks = ref<Array<{ id: number; name: string }>>([])
-const users = ref<Array<{ id: number; name: string }>>([])
+const users = ref<Array<{ id: number; name: string; role: string }>>([])
 
 const filters = reactive({
   assigned_to: '' as string,
@@ -72,7 +72,7 @@ onMounted(async () => {
   const pr = await fetchParks()
   parks.value = pr.data.data ?? []
   const ur = await fetchUsers()
-  users.value = ur.data ?? []
+  users.value = ur.data.data ?? []
 })
 
 const todo = computed(() => tasks.value.filter(t => t.status === 'todo'))
@@ -141,8 +141,6 @@ const cForm = reactive({
 const TYPE_CREATE_OPTIONS = TYPE_OPTIONS.slice(1)
 const PRIORITY_CREATE_OPTIONS = PRIORITY_OPTIONS.slice(1)
 
-const userOptions = computed(() => users.value.map(u => ({ value: String(u.id), label: u.name })))
-const parkOptions = computed(() => parks.value.map(p => ({ value: String(p.id), label: p.name })))
 
 async function submitCreate() {
   if (!cForm.park_id || !cForm.title) return

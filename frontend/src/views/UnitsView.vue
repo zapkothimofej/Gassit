@@ -89,8 +89,9 @@ watch(() => filters.park_id, async (pid) => {
 onMounted(async () => {
   const res = await fetchParks()
   parks.value = res.data.data ?? []
-  if (parks.value.length) {
-    filters.park_id = parks.value[0].id
+  const firstPark = parks.value[0]
+  if (firstPark) {
+    filters.park_id = firstPark.id
   }
 })
 

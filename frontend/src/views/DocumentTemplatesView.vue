@@ -79,7 +79,7 @@ const grouped = computed(() => {
   const groups: Record<string, DocumentTemplate[]> = {}
   for (const t of templates.value) {
     if (!groups[t.type]) groups[t.type] = []
-    groups[t.type].push(t)
+    groups[t.type]!.push(t)
   }
   return groups
 })
@@ -131,7 +131,7 @@ function editTemplate(t: DocumentTemplate) {
           <span class="badge" :style="{ background: typeBadgeColor[typeKey] ?? '#6b7280' }">
             {{ typeLabel(typeKey) }}
           </span>
-          <span class="group-count">{{ grouped[typeKey].length }} template(s)</span>
+          <span class="group-count">{{ grouped[typeKey]?.length ?? 0 }} template(s)</span>
         </div>
 
         <div class="card">

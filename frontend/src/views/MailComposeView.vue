@@ -16,7 +16,6 @@ interface MailTemplate {
 
 const parks = ref<Park[]>([])
 const templates = ref<MailTemplate[]>([])
-const loading = ref(false)
 
 const selectedParks = ref<number[]>([])
 const selectedStatuses = ref<string[]>([])

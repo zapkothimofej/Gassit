@@ -310,7 +310,7 @@ const typeBadgeColor: Record<string, string> = {
                   type="button"
                   class="var-chip"
                   @click="insertVariable(v)"
-                >{{ '{{' + v + '}}' }}</button>
+                >&#123;&#123;{{ v }}&#125;&#125;</button>
               </div>
             </div>
           </div>

@@ -59,7 +59,7 @@ class MailController extends Controller
             'model_type' => MailTemplate::class,
             'model_id'   => $template->id,
             'old_values' => null,
-            'new_values' => json_encode($data),
+            'new_values' => $data,
             'ip_address' => $request->ip(),
         ]);
 
@@ -91,8 +91,8 @@ class MailController extends Controller
             'action'     => 'mail_template_updated',
             'model_type' => MailTemplate::class,
             'model_id'   => $template->id,
-            'old_values' => json_encode($old),
-            'new_values' => json_encode($data),
+            'old_values' => $old,
+            'new_values' => $data,
             'ip_address' => $request->ip(),
         ]);
 
@@ -109,7 +109,7 @@ class MailController extends Controller
             'action'     => 'mail_template_deleted',
             'model_type' => MailTemplate::class,
             'model_id'   => $id,
-            'old_values' => json_encode(['id' => $id]),
+            'old_values' => ['id' => $id],
             'new_values' => null,
             'ip_address' => $request->ip(),
         ]);

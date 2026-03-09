@@ -8,7 +8,6 @@ import StatusBadge from '../components/StatusBadge.vue'
 import AppModal from '../components/AppModal.vue'
 import AppButton from '../components/AppButton.vue'
 import FormInput from '../components/FormInput.vue'
-import FormSelect from '../components/FormSelect.vue'
 import {
   fetchInvoices,
   createInvoice,

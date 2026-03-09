@@ -66,7 +66,7 @@ function xLabels(months: { month: string; count: number }[]): { x: number; label
   const availW = lcW - lcPL - lcPR
   return months
     .filter((_, j) => j % 2 === 0)
-    .map((m, i, arr) => {
+    .map((m, i) => {
       const origIdx = i * 2
       return {
         x: lcPL + (origIdx / Math.max(months.length - 1, 1)) * availW,

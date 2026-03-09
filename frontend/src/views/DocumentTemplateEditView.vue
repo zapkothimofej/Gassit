@@ -238,7 +238,7 @@ function goBack() {
           <div v-for="group in VARIABLE_GROUPS" :key="group.label" class="var-group">
             <p class="var-group-label">{{ group.label }}</p>
             <div v-for="v in group.vars" :key="v.key" class="var-item" @click="insertVariable(v.key)">
-              <code class="var-code">{{ '{{' + v.key + '}}' }}</code>
+              <code class="var-code">&#123;&#123;{{ v.key }}&#125;&#125;</code>
               <span class="var-desc">{{ v.desc }}</span>
             </div>
           </div>

@@ -110,26 +110,16 @@ class NotificationTest extends TestCase
 
     // Global search
 
-    public function test_search_customers_by_name(): void
+    public function test_search_customers_by_company(): void
     {
-        Customer::factory()->create(['first_name' => 'Findable', 'last_name' => 'Person', 'phone' => '123']);
-        Customer::factory()->create(['first_name' => 'Other', 'last_name' => 'User', 'phone' => '456']);
+        Customer::factory()->create(['company_name' => 'FindableFirmaGmbH', 'phone' => '123']);
+        Customer::factory()->create(['company_name' => 'OtherCompany', 'phone' => '456']);
 
-        $response = $this->actingAs($this->user)->getJson('/api/search?q=Findable');
+        $response = $this->actingAs($this->user)->getJson('/api/search?q=FindableFirmaGmbH');
 
         $response->assertOk();
         $this->assertCount(1, $response->json('customers'));
-        $this->assertEquals('Findable', $response->json('customers.0.first_name'));
-    }
-
-    public function test_search_customers_by_email(): void
-    {
-        Customer::factory()->create(['email' => 'unique@example.com', 'phone' => '789']);
-
-        $response = $this->actingAs($this->user)->getJson('/api/search?q=unique@example');
-
-        $response->assertOk();
-        $this->assertCount(1, $response->json('customers'));
+        $this->assertEquals('FindableFirmaGmbH', $response->json('customers.0.company_name'));
     }
 
     public function test_search_units_by_number(): void

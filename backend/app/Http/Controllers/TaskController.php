@@ -98,8 +98,8 @@ class TaskController extends Controller
             'action'     => 'task_updated',
             'model_type' => Task::class,
             'model_id'   => $task->id,
-            'old_values' => json_encode($old),
-            'new_values' => json_encode($data),
+            'old_values' => $old,
+            'new_values' => $data,
         ]);
 
         return response()->json($task->fresh()->load(['assignedTo', 'createdBy']));
@@ -115,7 +115,7 @@ class TaskController extends Controller
             'action'     => 'task_deleted',
             'model_type' => Task::class,
             'model_id'   => $id,
-            'old_values' => json_encode(['id' => $id]),
+            'old_values' => ['id' => $id],
             'new_values' => null,
         ]);
 

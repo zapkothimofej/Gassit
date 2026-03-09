@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppButton from '../components/AppButton.vue'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -127,6 +127,10 @@ const photos = ref<Photo[]>([])
 const loadingPhotos = ref(false)
 const uploadingPhotos = ref(false)
 const photoToDelete = ref<Photo | null>(null)
+const showDeletePhotoModal = computed({
+  get: () => photoToDelete.value !== null,
+  set: (v: boolean) => { if (!v) photoToDelete.value = null },
+})
 const deletingPhoto = ref(false)
 
 async function loadPhotos() {
@@ -536,7 +540,7 @@ onMounted(async () => {
     <div v-else class="empty-hint">Unit not found.</div>
 
     <!-- Delete Photo Modal -->
-    <AppModal v-model="(photoToDelete !== null)" title="Delete Photo">
+    <AppModal v-model="showDeletePhotoModal" title="Delete Photo">
       <p>Are you sure you want to delete this photo?</p>
       <template #footer>
         <AppButton variant="secondary" @click="photoToDelete = null">Cancel</AppButton>

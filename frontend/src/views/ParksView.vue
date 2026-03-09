@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { useAuthStore } from '../stores/auth'
 import AppButton from '../components/AppButton.vue'
 import AppModal from '../components/AppModal.vue'
 import FormInput from '../components/FormInput.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import api from '../api/axios'
-
-const auth = useAuthStore()
 
 interface Park {
   id: number
@@ -47,8 +44,9 @@ function showToast(msg: string) {
 async function loadParks() {
   const res = await api.get<{ data: Park[] }>('/parks')
   parks.value = res.data.data ?? []
-  if (parks.value.length && !selectedParkId.value) {
-    selectedParkId.value = parks.value[0].id
+  const firstPark = parks.value[0]
+  if (firstPark && !selectedParkId.value) {
+    selectedParkId.value = firstPark.id
   }
 }
 

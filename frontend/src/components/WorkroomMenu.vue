@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import AppModal from './AppModal.vue'
 import api from '../api/axios'
@@ -24,6 +24,18 @@ function defaultParkId(): number | null {
 type ModalType = 'application' | 'damage' | 'ticket' | 'invoice' | 'task' | null
 const activeModal = ref<ModalType>(null)
 const saving = ref(false)
+
+function modalRef(type: Exclude<ModalType, null>) {
+  return computed({
+    get: () => activeModal.value === type,
+    set: (v: boolean) => { if (!v) activeModal.value = null },
+  })
+}
+const showApplicationModal = modalRef('application')
+const showDamageModal = modalRef('damage')
+const showTicketModal = modalRef('ticket')
+const showInvoiceModal = modalRef('invoice')
+const showTaskModal = modalRef('task')
 
 function openModal(type: ModalType) {
   menuOpen.value = false
@@ -221,12 +233,14 @@ onUnmounted(() => {
   if (toastTimer.value) clearTimeout(toastTimer.value)
 })
 
-const menuItems = [
-  { type: 'application' as ModalType, label: 'Neue Anfrage', icon: '📝', shortcut: 'N+A' },
-  { type: 'damage'      as ModalType, label: 'Neuer Schaden', icon: '🔧', shortcut: 'N+S' },
-  { type: 'ticket'      as ModalType, label: 'Neues Ticket',  icon: '🎫', shortcut: 'N+T' },
-  { type: 'invoice'     as ModalType, label: 'Neue Factura',  icon: '🧾', shortcut: 'N+F' },
-  { type: 'task'        as ModalType, label: 'Neue Aufgabe',  icon: '✅', shortcut: 'N+U' },
+type NonNullModalType = Exclude<ModalType, null>
+
+const menuItems: Array<{ type: NonNullModalType; label: string; icon: string; shortcut: string }> = [
+  { type: 'application', label: 'Neue Anfrage', icon: '📝', shortcut: 'N+A' },
+  { type: 'damage',      label: 'Neuer Schaden', icon: '🔧', shortcut: 'N+S' },
+  { type: 'ticket',      label: 'Neues Ticket',  icon: '🎫', shortcut: 'N+T' },
+  { type: 'invoice',     label: 'Neue Factura',  icon: '🧾', shortcut: 'N+F' },
+  { type: 'task',        label: 'Neue Aufgabe',  icon: '✅', shortcut: 'N+U' },
 ]
 </script>
 
@@ -266,7 +280,7 @@ const menuItems = [
     </Teleport>
 
     <!-- Application modal -->
-    <AppModal v-model="(activeModal === 'application')" title="Neue Anfrage">
+    <AppModal v-model="showApplicationModal" title="Neue Anfrage">
       <div class="form-grid">
         <div class="form-row">
           <label>Park</label>
@@ -310,7 +324,7 @@ const menuItems = [
     </AppModal>
 
     <!-- Damage modal -->
-    <AppModal v-model="(activeModal === 'damage')" title="Neuer Schaden">
+    <AppModal v-model="showDamageModal" title="Neuer Schaden">
       <div class="form-grid">
         <div class="form-row">
           <label>Park</label>
@@ -340,7 +354,7 @@ const menuItems = [
     </AppModal>
 
     <!-- Ticket modal -->
-    <AppModal v-model="(activeModal === 'ticket')" title="Neues Ticket">
+    <AppModal v-model="showTicketModal" title="Neues Ticket">
       <div class="form-grid">
         <div class="form-row">
           <label>Park</label>
@@ -366,7 +380,7 @@ const menuItems = [
     </AppModal>
 
     <!-- Invoice modal -->
-    <AppModal v-model="(activeModal === 'invoice')" title="Neue Factura">
+    <AppModal v-model="showInvoiceModal" title="Neue Factura">
       <div class="form-grid">
         <div class="form-row">
           <label>Park</label>
@@ -400,7 +414,7 @@ const menuItems = [
     </AppModal>
 
     <!-- Task modal -->
-    <AppModal v-model="(activeModal === 'task')" title="Neue Aufgabe">
+    <AppModal v-model="showTaskModal" title="Neue Aufgabe">
       <div class="form-grid">
         <div class="form-row">
           <label>Park</label>

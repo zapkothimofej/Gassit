@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import AppTable from '../components/AppTable.vue'
 import AppPagination from '../components/AppPagination.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppModal from '../components/AppModal.vue'
 import AppButton from '../components/AppButton.vue'
 import FormInput from '../components/FormInput.vue'
-import FormSelect from '../components/FormSelect.vue'
 import { fetchCustomers, createCustomer, exportCustomers, type Customer } from '../api/customers'
 import { fetchParks } from '../api/parks'
 
-const auth = useAuthStore()
 const router = useRouter()
 
 const filters = reactive({

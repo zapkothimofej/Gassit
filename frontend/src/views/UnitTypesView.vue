@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import AppButton from '../components/AppButton.vue'
 import AppModal from '../components/AppModal.vue'
 import FormInput from '../components/FormInput.vue'
@@ -42,7 +42,8 @@ function showToast(msg: string) {
 onMounted(async () => {
   const pr = await fetchParks()
   parks.value = pr.data.data ?? []
-  if (parks.value.length) selectedParkId.value = parks.value[0].id
+  const firstPark = parks.value[0]
+  if (firstPark) selectedParkId.value = firstPark.id
 })
 
 watch(selectedParkId, () => { if (selectedParkId.value) loadUnitTypes() })
@@ -142,7 +143,6 @@ async function deleteType(ut: UnitType) {
 }
 
 // Floor Plan Upload
-const floorPlanInput = ref<HTMLInputElement | null>(null)
 const uploadingFloorPlan = ref<number | null>(null)
 
 async function onFloorPlanChange(e: Event, unitTypeId: number) {

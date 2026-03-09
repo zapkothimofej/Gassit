@@ -51,7 +51,7 @@ class ElectricityMeterController extends Controller
             'model_type' => ElectricityMeter::class,
             'model_id'   => $meter->id,
             'old_values' => null,
-            'new_values' => json_encode(['meter_number' => $meter->meter_number, 'unit_id' => $unit->id]),
+            'new_values' => ['meter_number' => $meter->meter_number, 'unit_id' => $unit->id],
         ]);
 
         return response()->json($meter, 201);
@@ -76,8 +76,8 @@ class ElectricityMeterController extends Controller
             'action'     => 'electricity_meter_updated',
             'model_type' => ElectricityMeter::class,
             'model_id'   => $meter->id,
-            'old_values' => json_encode($old),
-            'new_values' => json_encode($data),
+            'old_values' => $old,
+            'new_values' => $data,
         ]);
 
         return response()->json($meter->fresh());
@@ -93,7 +93,7 @@ class ElectricityMeterController extends Controller
             'action'     => 'electricity_meter_deleted',
             'model_type' => ElectricityMeter::class,
             'model_id'   => $id,
-            'old_values' => json_encode(['meter_number' => $meter->meter_number]),
+            'old_values' => ['meter_number' => $meter->meter_number],
             'new_values' => null,
         ]);
 
@@ -265,7 +265,7 @@ class ElectricityMeterController extends Controller
             'model_type' => ElectricityReading::class,
             'model_id'   => $reading->id,
             'old_values' => null,
-            'new_values' => json_encode(['invoice_id' => $invoice->id, 'charge' => $charge]),
+            'new_values' => ['invoice_id' => $invoice->id, 'charge' => $charge],
         ]);
 
         return response()->json([
@@ -315,7 +315,7 @@ class ElectricityMeterController extends Controller
             'model_type' => ElectricityPricing::class,
             'model_id'   => $pricing->id,
             'old_values' => null,
-            'new_values' => json_encode(['park_id' => $parkId, 'price_per_kwh' => $data['price_per_kwh'], 'valid_from' => $today]),
+            'new_values' => ['park_id' => $parkId, 'price_per_kwh' => $data['price_per_kwh'], 'valid_from' => $today],
         ]);
 
         return response()->json($pricing, 201);

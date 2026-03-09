@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import api from '../api/axios'
-import { useAuthStore } from '../stores/auth'
 import AppButton from '../components/AppButton.vue'
 import AppModal from '../components/AppModal.vue'
 import FormInput from '../components/FormInput.vue'
-
-const auth = useAuthStore()
 
 const toast = ref('')
 const toastError = ref(false)

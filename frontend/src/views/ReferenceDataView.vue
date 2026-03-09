@@ -25,7 +25,7 @@ const TABS: { key: string; label: string }[] = [
   { key: 'industry_sector', label: 'Branchen' },
 ]
 
-const activeTab = ref(TABS[0].key)
+const activeTab = ref(TABS[0]?.key ?? 'country')
 const items = ref<ReferenceItem[]>([])
 const loading = ref(false)
 

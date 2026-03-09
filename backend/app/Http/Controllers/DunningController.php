@@ -74,8 +74,8 @@ class DunningController extends Controller
             'action'     => 'dunning_paused',
             'model_type' => Customer::class,
             'model_id'   => $customer->id,
-            'old_values' => json_encode($old),
-            'new_values' => json_encode(['dunning_paused_until' => $pauseUntil]),
+            'old_values' => $old,
+            'new_values' => ['dunning_paused_until' => $pauseUntil],
         ]);
 
         return response()->json([
@@ -125,7 +125,7 @@ class DunningController extends Controller
             'model_type' => Customer::class,
             'model_id'   => $customer->id,
             'old_values' => null,
-            'new_values' => json_encode(['escalated_invoices' => $escalated]),
+            'new_values' => ['escalated_invoices' => $escalated],
         ]);
 
         return response()->json(['message' => 'Escalated ' . $escalated . ' invoice(s).']);
@@ -177,13 +177,13 @@ class DunningController extends Controller
                 'action'     => 'dunning_resolved',
                 'model_type' => Customer::class,
                 'model_id'   => $customer->id,
-                'old_values' => json_encode(['status' => $customer->getOriginal('status')]),
-                'new_values' => json_encode([
+                'old_values' => ['status' => $customer->getOriginal('status')],
+                'new_values' => [
                     'status'            => 'tenant',
                     'resolved_invoices' => $overdueInvoices->count(),
                     'reference'         => $data['reference'],
                     'notes'             => $data['notes'],
-                ]),
+                ],
             ]);
         });
 
