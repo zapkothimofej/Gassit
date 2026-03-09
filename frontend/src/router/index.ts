@@ -192,9 +192,24 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'mail',
-        name: 'Mail',
         component: () => import('../views/MailView.vue'),
         meta: { roles: ['admin', 'main_manager', 'office_worker'] },
+        children: [
+          {
+            path: '',
+            redirect: { name: 'MailCompose' },
+          },
+          {
+            path: 'compose',
+            name: 'MailCompose',
+            component: () => import('../views/MailComposeView.vue'),
+          },
+          {
+            path: 'sent',
+            name: 'MailSent',
+            component: () => import('../views/MailSentView.vue'),
+          },
+        ],
       },
       {
         path: 'mail-templates',
