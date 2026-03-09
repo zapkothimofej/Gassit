@@ -230,6 +230,18 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin'] },
       },
       {
+        path: 'settings/document-templates',
+        name: 'DocumentTemplates',
+        component: () => import('../views/DocumentTemplatesView.vue'),
+        meta: { roles: ['admin'] },
+      },
+      {
+        path: 'settings/document-templates/:id/edit',
+        name: 'DocumentTemplateEdit',
+        component: () => import('../views/DocumentTemplateEditView.vue'),
+        meta: { roles: ['admin'] },
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('../views/UsersView.vue'),
