@@ -17,6 +17,8 @@ const navItems: NavItem[] = [
   { label: 'Dashboard',       path: '/dashboard',      icon: '📊', roles: ['admin','main_manager','rental_manager','accountant','office_worker','park_worker','customer_service'] },
   { label: 'Parks',           path: '/parks',          icon: '🏕️', roles: ['admin','main_manager'] },
   { label: 'Unit Types',      path: '/unit-types',     icon: '📐', roles: ['admin','main_manager'] },
+  { label: 'Discounts',       path: '/discount-rules', icon: '🏷️', roles: ['admin','main_manager'] },
+  { label: 'Rev. Targets',    path: '/revenue-targets',icon: '🎯', roles: ['admin','main_manager','accountant'] },
   { label: 'Units',           path: '/units',          icon: '🏠', roles: ['admin','main_manager','rental_manager','park_worker'] },
   { label: 'Applications',    path: '/applications',   icon: '📝', roles: ['admin','main_manager','rental_manager','office_worker','customer_service'] },
   { label: 'Contracts',       path: '/contracts',      icon: '📄', roles: ['admin','main_manager','rental_manager','accountant'] },

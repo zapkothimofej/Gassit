@@ -59,6 +59,18 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin', 'main_manager'] },
       },
       {
+        path: 'discount-rules',
+        name: 'DiscountRules',
+        component: () => import('../views/DiscountRulesView.vue'),
+        meta: { roles: ['admin', 'main_manager'] },
+      },
+      {
+        path: 'revenue-targets',
+        name: 'RevenueTargets',
+        component: () => import('../views/RevenueTargetsView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'accountant'] },
+      },
+      {
         path: 'units',
         name: 'Units',
         component: () => import('../views/UnitsView.vue'),
