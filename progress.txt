@@ -856,3 +856,21 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - `replaceAll` requires ES2021+ lib — use `replace(new RegExp(..., 'g'))` or check tsconfig lib setting
   - New views may already exist as untracked files — check git status before creating
 ---
+
+## 2026-03-09 - US-068
+- Implemented mass mailing compose page at /mail/compose with recipient filters (park multi-select chips, customer status multi-select chips, contract status select)
+- Live estimated recipient count via POST /api/mail/recipient-count (updates on filter change)
+- Template select + subject override field
+- Send Now button: confirmation modal with recipient count, calls POST /api/mail/mass-send
+- Schedule button: datetime-local picker modal, calls POST /api/mail/schedule
+- Implemented sent mail log at /mail/sent: table with recipient, subject, template, sent_at, status badge (sent/failed/bounced)
+- Filter by date range and status; pagination support
+- MailView.vue updated to layout with Compose/Sent tabs + RouterView
+- Router updated: /mail now has children compose and sent with redirect from /mail → /mail/compose
+- Files: MailView.vue, MailComposeView.vue (new), MailSentView.vue (new), router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Nested child routes under /mail require MailView to contain <RouterView /> and the parent route drops the `name` (children have names instead)
+  - Chip-style multi-select pattern used for park/status filters (togglePark/toggleStatus with array.indexOf)
+  - `watch([...], fn, { deep: true })` needed for array refs to trigger on item push/splice
+---
