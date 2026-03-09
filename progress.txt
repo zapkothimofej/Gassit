@@ -988,3 +988,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - AppModal v-model accepts boolean — pass `(activeModal === 'type')` expression wrapped in parens for Vue reactivity
   - Toast via Teleport to body avoids z-index issues inside sidebar
 ---
+
+## 2026-03-09 - US-077
+- Implemented full /reports page with tab bar (Applications, Customers, Units, Finance, Audit)
+- Applications tab: park/date filter, 4 metric cards (total, conversion rate, avg processing time, completed), SVG bar chart by status, top sources table, Excel export
+- Customers tab: park/date filter, 4 metric cards (churn rate, total, active, months), SVG line chart (new/active/inactive by month), donut chart (status distribution), customers by park table, Excel export
+- Units/Finance/Audit tabs: placeholder stubs for US-078/079
+- API calls: GET /reports/applications and /reports/customers (graceful fallback on error)
+- Export: window.open `/api/reports/{type}?format=xlsx` in new tab
+- Files changed: frontend/src/views/ReportsView.vue
+- Typecheck passes
+- **Learnings for future iterations:**
+  - SVG charts built inline: bar chart uses rect elements, line chart uses path with M/L commands, donut uses arc paths
+  - Donut arc formula: M outer-start A r,r 0 large,1 outer-end L inner-end A r,r 0 large,0 inner-start Z
+  - Line chart x labels use filter((_, j) => j % 2 === 0) to avoid crowding
+  - Export to Excel: window.open with ?format=xlsx opens in new tab without Vue router
+---
