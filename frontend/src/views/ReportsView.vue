@@ -357,12 +357,108 @@ function exportDatev() {
   datevModalOpen.value = false
 }
 
+// --- Audit tab data ---
+interface AuditEntry {
+  id: number
+  user_name: string | null
+  action: string
+  model_type: string
+  model_id: number | null
+  old_values: Record<string, unknown> | null
+  new_values: Record<string, unknown> | null
+  ip_address: string | null
+  created_at: string
+}
+interface AuditPage {
+  data: AuditEntry[]
+  total: number
+  last_page: number
+}
+
+const auditEntries = ref<AuditEntry[]>([])
+const auditTotal = ref(0)
+const auditLastPage = ref(1)
+const auditPage = ref(1)
+const auditLoading = ref(false)
+const auditUserFilter = ref('')
+const auditModelType = ref('')
+const auditFrom = ref(new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10))
+const auditTo = ref(new Date().toISOString().slice(0, 10))
+const auditUsers = ref<{ id: number; name: string }[]>([])
+const expandedAuditId = ref<number | null>(null)
+
+const modelTypes = ['Application', 'Contract', 'Customer', 'Invoice', 'Payment', 'DamageReport', 'Task', 'Park', 'Unit', 'User']
+
+async function loadAuditUsers() {
+  try {
+    const res = await api.get<{ data: { id: number; name: string }[] }>('/admin/users', { params: { per_page: 200 } })
+    auditUsers.value = res.data.data ?? []
+  } catch {
+    auditUsers.value = []
+  }
+}
+
+async function loadAuditLog() {
+  auditLoading.value = true
+  try {
+    const res = await api.get<AuditPage>('/audit-log', {
+      params: {
+        page: auditPage.value,
+        per_page: 20,
+        user: auditUserFilter.value || undefined,
+        model_type: auditModelType.value || undefined,
+        from: auditFrom.value,
+        to: auditTo.value,
+      },
+    })
+    auditEntries.value = res.data.data
+    auditTotal.value = res.data.total
+    auditLastPage.value = res.data.last_page
+  } catch {
+    auditEntries.value = []
+    auditTotal.value = 0
+    auditLastPage.value = 1
+  } finally {
+    auditLoading.value = false
+  }
+}
+
+function toggleAuditRow(id: number) {
+  expandedAuditId.value = expandedAuditId.value === id ? null : id
+}
+
+function jsonSummary(vals: Record<string, unknown> | null): string {
+  if (!vals) return '–'
+  const keys = Object.keys(vals)
+  if (!keys.length) return '–'
+  return keys.slice(0, 3).map((k) => `${k}: ${String(vals[k]).slice(0, 20)}`).join(', ') + (keys.length > 3 ? '…' : '')
+}
+
+function exportAuditCsv() {
+  const params = new URLSearchParams({
+    format: 'csv',
+    from: auditFrom.value,
+    to: auditTo.value,
+    ...(auditUserFilter.value ? { user: auditUserFilter.value } : {}),
+    ...(auditModelType.value ? { model_type: auditModelType.value } : {}),
+  })
+  window.open(`/api/audit-log?${params}`, '_blank')
+}
+
+watch([auditUserFilter, auditModelType, auditFrom, auditTo], () => {
+  auditPage.value = 1
+  loadAuditLog()
+})
+
+watch(auditPage, loadAuditLog)
+
 // --- Load on mount and filter change ---
 function loadForTab() {
   if (activeTab.value === 'applications') loadAppStats()
   else if (activeTab.value === 'customers') loadCustStats()
   else if (activeTab.value === 'units') loadUnitStats()
   else if (activeTab.value === 'finance') loadFinStats()
+  else if (activeTab.value === 'audit') { loadAuditUsers(); loadAuditLog() }
 }
 
 watch([activeTab, parkId, dateFrom, dateTo], loadForTab)
@@ -378,13 +474,21 @@ onMounted(loadForTab)
     <!-- Tab bar -->
     <div class="tab-bar">
       <button
-        v-for="tab in (['applications', 'customers', 'units', 'finance', 'audit'] as const)"
+        v-for="tab in (['applications', 'customers', 'units', 'finance'] as const)"
         :key="tab"
         class="tab-btn"
         :class="{ active: activeTab === tab }"
         @click="activeTab = tab"
       >
-        {{ { applications: 'Anfragen', customers: 'Kunden', units: 'Einheiten', finance: 'Finanzen', audit: 'Audit' }[tab] }}
+        {{ { applications: 'Anfragen', customers: 'Kunden', units: 'Einheiten', finance: 'Finanzen' }[tab] }}
+      </button>
+      <button
+        v-if="auth.role === 'admin'"
+        class="tab-btn"
+        :class="{ active: activeTab === 'audit' }"
+        @click="activeTab = 'audit'"
+      >
+        Audit
       </button>
     </div>
 
@@ -807,9 +911,79 @@ onMounted(loadForTab)
       </template>
     </div>
 
-    <!-- Audit Tab (placeholder for US-079) -->
-    <div v-if="activeTab === 'audit'" class="tab-content placeholder">
-      <p>Audit-Log wird in US-079 implementiert.</p>
+    <!-- Audit Tab (Admin only) -->
+    <div v-if="activeTab === 'audit' && auth.role === 'admin'" class="tab-content">
+      <div class="filters-row">
+        <select v-model="auditUserFilter" class="filter-ctrl">
+          <option value="">Alle Nutzer</option>
+          <option v-for="u in auditUsers" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
+        </select>
+        <select v-model="auditModelType" class="filter-ctrl">
+          <option value="">Alle Entitäten</option>
+          <option v-for="mt in modelTypes" :key="mt" :value="mt">{{ mt }}</option>
+        </select>
+        <input v-model="auditFrom" class="filter-ctrl" type="date" />
+        <input v-model="auditTo" class="filter-ctrl" type="date" />
+        <button class="export-btn" @click="exportAuditCsv">↓ CSV exportieren</button>
+      </div>
+
+      <div v-if="auditLoading" class="loading-state">Lade...</div>
+      <template v-else>
+        <div class="chart-card" style="overflow-x: auto">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Nutzer</th>
+                <th>Aktion</th>
+                <th>Entität</th>
+                <th>ID</th>
+                <th>Alt (Zusammenfassung)</th>
+                <th>Neu (Zusammenfassung)</th>
+                <th>IP</th>
+                <th>Zeitpunkt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="entry in auditEntries" :key="entry.id">
+                <tr class="audit-row" :class="{ expanded: expandedAuditId === entry.id }" @click="toggleAuditRow(entry.id)">
+                  <td>{{ entry.user_name ?? '–' }}</td>
+                  <td><span class="action-badge" :class="entry.action">{{ entry.action }}</span></td>
+                  <td>{{ entry.model_type }}</td>
+                  <td class="num">{{ entry.model_id ?? '–' }}</td>
+                  <td class="summary-cell">{{ jsonSummary(entry.old_values) }}</td>
+                  <td class="summary-cell">{{ jsonSummary(entry.new_values) }}</td>
+                  <td class="mono">{{ entry.ip_address ?? '–' }}</td>
+                  <td class="mono">{{ new Date(entry.created_at).toLocaleString('de-DE') }}</td>
+                </tr>
+                <tr v-if="expandedAuditId === entry.id" class="audit-detail-row">
+                  <td colspan="8">
+                    <div class="diff-wrap">
+                      <div class="diff-col">
+                        <div class="diff-label">Alte Werte</div>
+                        <pre class="diff-pre old">{{ entry.old_values ? JSON.stringify(entry.old_values, null, 2) : '–' }}</pre>
+                      </div>
+                      <div class="diff-col">
+                        <div class="diff-label">Neue Werte</div>
+                        <pre class="diff-pre new">{{ entry.new_values ? JSON.stringify(entry.new_values, null, 2) : '–' }}</pre>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+              <tr v-if="!auditEntries.length">
+                <td colspan="8" class="empty">Keine Einträge</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="auditLastPage > 1" class="audit-pagination">
+          <button class="page-btn" :disabled="auditPage <= 1" @click="auditPage--">‹</button>
+          <span class="page-info">Seite {{ auditPage }} / {{ auditLastPage }} ({{ auditTotal }} Einträge)</span>
+          <button class="page-btn" :disabled="auditPage >= auditLastPage" @click="auditPage++">›</button>
+        </div>
+      </template>
     </div>
 
     <!-- DATEV Export Modal -->
@@ -1242,5 +1416,152 @@ onMounted(loadForTab)
 
 .btn-secondary:hover {
   background: #f1f5f9;
+}
+
+/* Audit table */
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  min-width: 900px;
+}
+
+.audit-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.audit-row {
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+
+.audit-row:hover,
+.audit-row.expanded {
+  background: #f8fafc;
+}
+
+.audit-row td {
+  padding: 0.5rem 0.75rem;
+  color: #374151;
+  vertical-align: top;
+}
+
+.audit-detail-row td {
+  padding: 0;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.diff-wrap {
+  display: flex;
+  gap: 0;
+}
+
+.diff-col {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-right: 1px solid #e2e8f0;
+}
+
+.diff-col:last-child {
+  border-right: none;
+}
+
+.diff-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.diff-pre {
+  font-size: 0.75rem;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 0.625rem;
+  border-radius: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.diff-pre.old {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.diff-pre.new {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.action-badge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.action-badge.created { background: #dcfce7; color: #166534; }
+.action-badge.updated { background: #dbeafe; color: #1e40af; }
+.action-badge.deleted { background: #fee2e2; color: #991b1b; }
+
+.summary-cell {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.mono {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+}
+
+.page-btn {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.8125rem;
+  color: #64748b;
 }
 </style>
