@@ -230,6 +230,12 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin'] },
       },
       {
+        path: 'settings/system',
+        name: 'SystemSettings',
+        component: () => import('../views/SystemSettingsView.vue'),
+        meta: { roles: ['admin'] },
+      },
+      {
         path: 'settings/document-templates',
         name: 'DocumentTemplates',
         component: () => import('../views/DocumentTemplatesView.vue'),
