@@ -1055,3 +1055,14 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Files changed: CustomerReportsView.vue (new), UnitReportsView.vue (new), router/index.ts
 - Typecheck passes
 ---
+
+## 2026-03-09 - US-082
+- Created FinanceReportsView.vue at /finance/reports with 4 tabs: Revenue, Debtors, Payments, Vendors
+- Revenue tab: plan vs actual monthly table with diff column (green/red), year total metric
+- Debtors tab: age bucket table (0-30/31-60/60+ days), dunning level badge, total owed metric
+- Payments tab: bar chart by method + success/failed counts table, avg payment days metric
+- Vendors tab: 3 tables (by park / by specialty / by month)
+- All tabs: park + date range filter, Excel export
+- Files changed: FinanceReportsView.vue (new), router/index.ts
+- Typecheck passes
+---
