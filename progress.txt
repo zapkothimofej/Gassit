@@ -972,3 +972,19 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Keyboard events (Ctrl+K, Escape) registered globally on document in onMounted/onUnmounted
   - Vue-tsc typecheck: `cd frontend && npx vue-tsc --noEmit`
 ---
+
+## 2026-03-09 - US-076
+- Created WorkroomMenu.vue: sidebar bottom button "Workroom" opens dropdown with 5 quick-create options
+- Options: Neue Anfrage (application), Neuer Schaden (damage), Neues Ticket, Neue Factura (invoice), Neue Aufgabe (task)
+- Each option opens a creation modal pre-selecting auth.parks[0] as default park; user can change in modal
+- Chord keyboard shortcuts: press N then A/S/T/F/U within 800ms (ignored when focus is in input/textarea/select)
+- Success toast via Teleport to body, 3s auto-dismiss
+- Added WorkroomMenu import and usage in AppSidebar.vue (below nav, above sidebar close)
+- Files changed: frontend/src/components/WorkroomMenu.vue (new), frontend/src/components/AppSidebar.vue
+- Typecheck passes (vue-tsc --noEmit)
+- **Learnings for future iterations:**
+  - Chord shortcuts: track first key with timeout, check second key in same handler
+  - Ignore keyboard shortcuts when focused on INPUT/TEXTAREA/SELECT
+  - AppModal v-model accepts boolean — pass `(activeModal === 'type')` expression wrapped in parens for Vue reactivity
+  - Toast via Teleport to body avoids z-index issues inside sidebar
+---
