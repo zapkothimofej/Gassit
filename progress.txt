@@ -947,3 +947,17 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - QR code from /auth/2fa/setup may be a data: URI or plain string — handle both display cases
   - Notification preferences endpoint may not exist yet (gracefully handled with try/catch)
 ---
+
+## 2026-03-09 - US-074
+- Updated notifications store: added AppNotification interface, recent[] list, markRead(), markAllRead(), startPolling() (60s interval)
+- Updated AppLayout to call startPolling() on mount
+- Updated AppTopBar: bell click opens dropdown with latest 5 notifications, time ago, unread highlight, mark all read, "Alle anzeigen" link to /notifications; outside click closes dropdown
+- Created NotificationsView.vue: full paginated list, read/unread filter, type badges (task/invoice/application/waiting-list/dunning), click to navigate to related entity + mark as read
+- Added /notifications route to router (all roles)
+- vue-tsc --noEmit typecheck passes
+- Files changed: stores/notifications.ts, components/AppTopBar.vue, layouts/AppLayout.vue, views/NotificationsView.vue, router/index.ts
+- **Learnings for future iterations:**
+  - Notification store polling uses setInterval stored in module-level variable to avoid duplicate intervals
+  - Outside-click dropdown close: addEventListener('click', handler) on document in onMounted, remove in onUnmounted
+  - @click.stop on the bell button prevents the document click handler from immediately closing the dropdown
+---
