@@ -2,8 +2,21 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../api/axios'
 
+export interface AppNotification {
+  id: number
+  type: string
+  title: string
+  body: string
+  related_type: string | null
+  related_id: number | null
+  read_at: string | null
+  created_at: string
+}
+
 export const useNotificationStore = defineStore('notifications', () => {
   const unreadCount = ref(0)
+  const recent = ref<AppNotification[]>([])
+  let pollInterval: ReturnType<typeof setInterval> | null = null
 
   async function fetchUnreadCount() {
     try {
@@ -14,5 +27,53 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
-  return { unreadCount, fetchUnreadCount }
+  async function fetchRecent() {
+    try {
+      const response = await api.get('/notifications', { params: { per_page: 5 } })
+      const data = response.data
+      recent.value = Array.isArray(data) ? data : (data.data ?? [])
+    } catch {
+      // ignore
+    }
+  }
+
+  async function markRead(id: number) {
+    try {
+      await api.post(`/notifications/${id}/read`)
+      const n = recent.value.find((x) => x.id === id)
+      if (n) n.read_at = new Date().toISOString()
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    } catch {
+      // ignore
+    }
+  }
+
+  async function markAllRead() {
+    try {
+      await api.post('/notifications/read-all')
+      recent.value.forEach((n) => { n.read_at = n.read_at ?? new Date().toISOString() })
+      unreadCount.value = 0
+    } catch {
+      // ignore
+    }
+  }
+
+  function startPolling() {
+    fetchUnreadCount()
+    fetchRecent()
+    if (!pollInterval) {
+      pollInterval = setInterval(() => {
+        fetchUnreadCount()
+      }, 60_000)
+    }
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval)
+      pollInterval = null
+    }
+  }
+
+  return { unreadCount, recent, fetchUnreadCount, fetchRecent, markRead, markAllRead, startPolling, stopPolling }
 })

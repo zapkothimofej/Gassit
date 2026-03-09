@@ -277,6 +277,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/ProfileView.vue'),
         meta: { roles: ['admin', 'main_manager', 'rental_manager', 'accountant', 'office_worker', 'park_worker', 'customer_service'] },
       },
+      {
+        path: 'notifications',
+        name: 'Notifications',
+        component: () => import('../views/NotificationsView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'rental_manager', 'accountant', 'office_worker', 'park_worker', 'customer_service'] },
+      },
     ],
   },
 ]

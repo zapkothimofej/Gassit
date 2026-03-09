@@ -8,7 +8,7 @@ import { useNotificationStore } from '../stores/notifications'
 const notificationStore = useNotificationStore()
 
 onMounted(() => {
-  notificationStore.fetchUnreadCount()
+  notificationStore.startPolling()
 })
 </script>
 
