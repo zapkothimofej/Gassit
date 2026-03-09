@@ -1004,3 +1004,16 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Line chart x labels use filter((_, j) => j % 2 === 0) to avoid crowding
   - Export to Excel: window.open with ?format=xlsx opens in new tab without Vue router
 ---
+
+## 2026-03-09 - US-078
+- Extended ReportsView.vue with full Units and Finance tab implementations
+- Units tab: park filter, 4 metric cards (total/occupancy rate/avg rent per m²/vacancy), occupancy donut chart (2 segments), top damaged units table, vacant units table sorted by duration
+- Finance tab: park/date filter, outstanding debt metric card (red highlight), revenue vs plan grouped bar chart, payment methods donut, top debtors table, DATEV export modal (date range → window.open ?format=datev)
+- DATEV modal: inline Teleport to body, date range inputs, download button
+- Files changed: frontend/src/views/ReportsView.vue
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Grouped bar chart: two rects side by side per group, bw = groupW/2 - gap
+  - DATEV export uses separate datevFrom/datevTo (not the main date filters) so user can choose specific fiscal period
+  - `exportExcel` function already existed from US-077; Finance tab calls it with 'finance' cast to avoid TS complaints
+---
