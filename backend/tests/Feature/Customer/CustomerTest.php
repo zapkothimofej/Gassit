@@ -204,7 +204,7 @@ class CustomerTest extends TestCase
             ->assertJsonPath('message', 'Customer data anonymized.');
 
         $customer->refresh();
-        $this->assertEquals('GDPR_DELETED', $customer->first_name);
+        $this->assertEquals('[gelöscht]', $customer->first_name);
         $this->assertNotNull($customer->gdpr_deleted_at);
     }
 

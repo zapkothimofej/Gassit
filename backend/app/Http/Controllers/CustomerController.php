@@ -60,6 +60,11 @@ class CustomerController extends Controller
             'notes'           => ['nullable', 'string'],
         ]);
 
+        // Record GDPR consent timestamp if not explicitly provided
+        if (empty($data['gdpr_consent_at'])) {
+            $data['gdpr_consent_at'] = now();
+        }
+
         $customer = Customer::create($data);
 
         $this->writeAuditLog($request, 'create', $customer, null, $customer->toArray());
@@ -163,19 +168,44 @@ class CustomerController extends Controller
         $old = $customer->toArray();
 
         $customer->update([
-            'first_name'      => 'GDPR_DELETED',
-            'last_name'       => 'GDPR_DELETED',
+            'first_name'      => '[gelöscht]',
+            'last_name'       => '[gelöscht]',
             'company_name'    => null,
             'email'           => "gdpr_deleted_{$customer->id}@deleted.invalid",
-            'phone'           => 'DELETED',
+            'phone'           => '[gelöscht]',
             'dob'             => null,
             'id_number'       => null,
+            'address'         => '[gelöscht]',
+            'city'            => '[gelöscht]',
+            'zip'             => '[gelöscht]',
             'gdpr_deleted_at' => now(),
         ]);
 
         $this->writeAuditLog($request, 'gdpr_delete', $customer, $old, $customer->fresh()->toArray());
 
         return response()->json(['message' => 'Customer data anonymized.']);
+    }
+
+    public function dataExport(Request $request, int $id): JsonResponse
+    {
+        $customer = Customer::with([
+            'applications.park',
+            'applications.unitType',
+            'contracts.unit.park',
+            'invoices.items',
+            'documents',
+        ])->findOrFail($id);
+
+        $this->writeAuditLog($request, 'data_export', $customer, null, ['exported_by' => $request->user()->id]);
+
+        return response()->json([
+            'customer'     => $customer->toArray(),
+            'applications' => $customer->applications->toArray(),
+            'contracts'    => $customer->contracts->toArray(),
+            'invoices'     => $customer->invoices->toArray(),
+            'documents'    => $customer->documents->toArray(),
+            'exported_at'  => now()->toIso8601String(),
+        ]);
     }
 
     public function blacklist(Request $request, int $id): JsonResponse

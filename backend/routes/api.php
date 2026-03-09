@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum', 'role:admin,main_manager,rental_manager,offic
     Route::get('/{id}/documents', [CustomerController::class, 'listDocuments']);
     Route::delete('/{id}/documents/{docId}', [CustomerController::class, 'deleteDocument']);
     Route::post('/{id}/gdpr-delete', [CustomerController::class, 'gdprDelete']);
+    Route::get('/{id}/data-export', [CustomerController::class, 'dataExport']);
     Route::post('/{id}/blacklist', [CustomerController::class, 'blacklist']);
     Route::delete('/{id}/blacklist', [CustomerController::class, 'removeBlacklist']);
 });
