@@ -732,3 +732,127 @@ Started: Sat Mar  7 00:34:23 WEST 2026
 - Added /customers/blacklist route BEFORE /customers/:id in router
 - vue-tsc --noEmit typecheck passes
 ---
+
+## 2026-03-08 - US-054
+- Created `frontend/src/api/contracts.ts` with fetchContracts, exportContracts, Contract/ContractFilters interfaces
+- Replaced stub ContractsView.vue with full implementation: filters (park, status, date range, search), AppTable with typed slots for customer/unit/park/rent/status, export xlsx, pagination
+- Added `contracts/:id` route to router (placeholder pointing to ContractsView until detail view is built)
+- **Learnings for future iterations:**
+  - Contract date range filter uses start_date_from / start_date_to params matching backend convention
+  - Export pattern same as customers: blob download with URL.createObjectURL
+---
+
+## 2026-03-08 - US-055
+- Created full ContractDetailView.vue with: header+status stepper, Send for Signature/Activate/Renew/Terminate/Return Deposit actions, Contract info card, Signatures card, Deposit card, Invoices tab
+- Expanded `frontend/src/api/contracts.ts` with ContractDetail/Deposit/Invoice interfaces and API functions for all lifecycle actions
+- Added `contracts/:id` route pointing to ContractDetailView
+- **Learnings for future iterations:**
+  - `fetchContractDeposit` wrapped in try/catch so it doesn't fail if no deposit yet (returns 404)
+  - Stepper uses STEPPER constant (4 core states), terminal states (terminated/expired/declined) show beyond last step
+  - FormSelect `options` prop is `{ value: string|number; label: string }[]`
+---
+
+## 2026-03-08 - US-056
+- Created `frontend/src/components/DepositReturnModal.vue`: deduction amount input, computed return amount, return method select, IBAN field for bank_transfer, Mollie note for mollie_payout
+- Updated ContractDetailView to use DepositReturnModal instead of simple AppModal
+- **Learnings for future iterations:**
+  - DepositReturnModal emits `done` event after successful API call — parent calls loadAll() to refresh
+  - The `returnDeposit` API sends: deduction_amount, deduction_reason, return_method
+---
+
+## 2026-03-08 - US-057
+- Created `frontend/src/api/invoices.ts` with full type definitions and API calls (fetchInvoices, fetchInvoice, createInvoice, sendInvoice, cancelInvoice, createPaymentLink, datevExport, getInvoicePdfUrl, searchCustomers)
+- Wrote InvoicesView.vue: filters (park/status/date range), DATEV export modal, create invoice modal with dynamic line items and customer autocomplete
+- Wrote InvoiceDetailView.vue: info cards, line items table, Download PDF/Send Email/Payment Link/Cancel actions, payment link copy modal
+- Added invoices/:id route to router
+- **Learnings for future iterations:**
+  - DATEV export route is `GET /invoices/datev-export` with `from`, `to`, optional `park_id` params — must be declared BEFORE `/{id}` in backend routes (already handled)
+  - PDF opens in new tab via window.open() — URL constructed from axios baseURL + /api/invoices/{id}/pdf
+---
+
+## 2026-03-08 - US-058
+- Rewrote DunningView.vue with: summary metrics grid, filter bar (park/dunning level), debtors table with Pause/Escalate/Resolve inline action buttons, confirmation modals for each action
+- API calls go directly to `/debtors` endpoint with `park_id` param; dunning_level filter is client-side
+- **Learnings for future iterations:**
+  - `/debtors` returns a flat array (not paginated) — no pagination needed
+  - `dunning_paused_until` is on the `customer` sub-object, not the top-level row
+  - Level badge colors: 0=gray, 1=yellow, 2=orange, 3=red
+---
+
+## 2026-03-08 - US-059
+- Created PaymentsView.vue with filters (park/status/method/date range), table with refund action button per paid payment, refund confirmation modal
+- Rewrote VendorsView.vue with vendor list table, vendor detail modal showing info + vendor invoices list with Mark Paid action, create vendor modal
+- Added `payments` route to router
+- **Learnings for future iterations:**
+  - `GET /vendors/{id}/invoices` may return array or paginated — handled both with fallback
+  - `POST /payments/{id}/refund` is the refund endpoint
+  - Vendor invoices use `POST /vendors/{vendorId}/invoices/{invoiceId}/pay` to mark paid
+---
+
+## 2026-03-08 - US-060
+- Rewrote DamageReportsView.vue: filters (park/status), table with inline columns, create modal (unit_id input + description + estimated cost)
+- Created DamageReportDetailView.vue: info card, photo gallery, status transition buttons (based on TRANSITIONS map), assign vendor modal, generate invoice confirm modal
+- Added `damage-reports/:id` route
+- **Learnings for future iterations:**
+  - Backend has no `GET /damage-reports/{id}` — loads via index with per_page=1000 and find() as fallback (or query param approach)
+  - Status transitions: reported→in_assessment→repair_ordered→in_repair→resolved→closed
+  - Invoice generation: `POST /damage-reports/{id}/invoice`
+  - Assign vendor: `POST /damage-reports/{id}/assign-vendor` with `{ vendor_id }`
+---
+
+## 2026-03-08 - US-061
+- Rewrote TasksView.vue with native HTML5 drag-and-drop Kanban board (3 columns: Todo/In Progress/Done)
+- Task cards: type badge, priority colored dot, assignee initials avatar, due date (red if overdue), drag-to-move → PUT /tasks/{id}/status
+- Filter bar: assignee, type, priority (admin sees all users; park_worker sees own tasks via backend filter)
+- Create task modal with park/type/priority/assignee/due_date/description fields
+- Task detail modal on card click
+- **Learnings for future iterations:**
+  - Native drag-and-drop: card has `draggable="true"` + `@dragstart`, column has `@dragover.prevent` + `@drop`
+  - Backend enforces park_worker sees only own tasks — frontend doesn't need to filter for this role
+  - `PUT /tasks/{id}/status` with `{ status }` updates task status
+---
+
+## 2026-03-08 - US-062
+- Rewrote ParksView.vue with: basic info form (name/address/city/zip/country/phone/email), bank details (IBAN/BIC/owner), branding (logo upload + color picker), LLM access codes table with sync and add/delete
+- Logo upload uses multipart/form-data POST /parks/{id}/logo
+- LLM codes: GET /parks/{id}/access-codes, POST to add, DELETE to remove, POST .../sync to sync
+- **Learnings for future iterations:**
+  - LLM codes endpoint returns plain array (not paginated)
+  - Color picker uses native HTML `<input type="color">` — simple but functional
+---
+
+## 2026-03-08 - US-063
+- Created UnitTypesView.vue: unit type cards grid with edit/delete, create/edit modal with features multi-select, floor plan upload (POST /unit-types/{id}/floor-plan), insurance options modal (list/add/toggle)
+- Added `unit-types` route to router and sidebar entry
+- **Learnings for future iterations:**
+  - Features sync: POST /unit-types/{id}/features with { features: string[] } - replaces all features
+  - Insurance options endpoint: GET /parks/{parkId}/insurance-options (may need unit_type_id filter)
+  - Floor plan upload is multipart form at POST /unit-types/{id}/floor-plan with field name 'floor_plan'
+---
+
+## 2026-03-08 - US-064
+- Created DiscountRulesView.vue: table with active toggle, create/edit modal (name/type/value/from-month/to-month)
+- Created RevenueTargetsView.vue: 4-column month grid, inline target editing (save on blur), actual vs target %, color-coded progress bar
+- Added discount-rules and revenue-targets routes + sidebar entries
+- **Learnings for future iterations:**
+  - Revenue targets save via POST /parks/{id}/revenue-targets (upsert via updateOrCreate) — no separate PUT needed per cell
+  - Actuals fetched via GET /parks/{id}/revenue-targets/{year}/{month}/actual — run in parallel with Promise.allSettled
+---
+
+## 2026-03-08 - US-065
+- Rewrote ElectricityView.vue: pricing history table (price/kwh, valid_from, valid_to with 'Current' badge), add pricing modal, units & meters overview table linking to unit detail electricity tab
+- Park selector at top for multi-park access
+- **Learnings for future iterations:**
+  - POST /parks/{id}/electricity-pricing auto-closes previous open period (sets valid_to=today)
+  - Units electricity loaded via GET /parks/{id}/units + GET /units/{id}/meters in parallel
+---
+
+## 2026-03-09 - US-067
+- MailTemplatesView.vue was already created (untracked file) — wired it up to router and sidebar
+- Fixed two typecheck errors: removed unused `computed` import, replaced `replaceAll` with `replace(/pattern/g)` for ES2020 compat
+- TipTap (@tiptap/vue-3, @tiptap/starter-kit) already in package.json
+- Route: /mail-templates, roles: admin/main_manager/office_worker
+- **Learnings for future iterations:**
+  - `replaceAll` requires ES2021+ lib — use `replace(new RegExp(..., 'g'))` or check tsconfig lib setting
+  - New views may already exist as untracked files — check git status before creating
+---
