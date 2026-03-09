@@ -265,6 +265,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/AdminEmployeesView.vue'),
         meta: { roles: ['admin'] },
       },
+      {
+        path: 'admin/reference-data',
+        name: 'ReferenceData',
+        component: () => import('../views/ReferenceDataView.vue'),
+        meta: { roles: ['admin'] },
+      },
     ],
   },
 ]
