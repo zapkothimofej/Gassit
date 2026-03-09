@@ -32,7 +32,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonStructure(['access_token', 'token_type', 'user' => ['id', 'name', 'email', 'role', 'parks']]);
+            ->assertJsonStructure(['token', 'token_type', 'user' => ['id', 'name', 'email', 'role', 'parks']]);
     }
 
     public function test_login_fails_with_wrong_password(): void
@@ -108,9 +108,9 @@ class AuthTest extends TestCase
             ->postJson('/api/auth/refresh');
 
         $response->assertOk()
-            ->assertJsonStructure(['access_token', 'token_type']);
+            ->assertJsonStructure(['token', 'token_type']);
 
-        $this->assertNotEquals($token, $response->json('access_token'));
+        $this->assertNotEquals($token, $response->json('token'));
     }
 
     public function test_forgot_password_returns_ok_for_valid_email(): void

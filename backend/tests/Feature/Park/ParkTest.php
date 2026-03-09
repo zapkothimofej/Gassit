@@ -44,14 +44,17 @@ class ParkTest extends TestCase
         $this->getJson('/api/parks')->assertStatus(401);
     }
 
-    public function test_non_manager_cannot_access_parks(): void
+    public function test_park_worker_can_list_own_parks(): void
     {
+        $park = Park::factory()->create();
         $user = User::factory()->create(['role' => 'park_worker', 'active' => true]);
+        $user->parks()->attach($park->id);
         $token = $user->createToken('api-token')->plainTextToken;
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/parks')
-            ->assertStatus(403);
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_admin_can_list_all_parks(): void

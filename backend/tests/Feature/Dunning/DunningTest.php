@@ -188,7 +188,10 @@ class DunningTest extends TestCase
         $invoice  = $this->makeOverdueInvoice($customer, $park);
 
         $response = $this->actingAs($this->accountant)
-            ->postJson('/api/debtors/' . $customer->id . '/resolve');
+            ->postJson('/api/debtors/' . $customer->id . '/resolve', [
+                'notes'     => 'Settled via bank transfer',
+                'reference' => 'REF-2026-001',
+            ]);
 
         $response->assertOk();
 
