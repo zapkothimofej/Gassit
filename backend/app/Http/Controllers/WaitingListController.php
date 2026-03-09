@@ -19,7 +19,6 @@ class WaitingListController extends Controller
     {
         $entries = WaitingList::with(['customer', 'unitType'])
             ->where('park_id', $parkId)
-            ->whereNull('deleted_at')
             ->orderByDesc('priority_score')
             ->orderBy('created_at')
             ->paginate(20);
@@ -29,8 +28,7 @@ class WaitingListController extends Controller
 
     public function globalIndex(Request $request): JsonResponse
     {
-        $query = WaitingList::with(['customer', 'unitType', 'park'])
-            ->whereNull('deleted_at');
+        $query = WaitingList::with(['customer', 'unitType', 'park']);
 
         if ($request->filled('park_id')) {
             $query->where('park_id', $request->query('park_id'));
