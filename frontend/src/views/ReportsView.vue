@@ -199,10 +199,170 @@ function exportExcel(type: 'applications' | 'customers') {
   window.open(`/api/reports/${type}?${params}`, '_blank')
 }
 
+// --- Units tab data ---
+interface UnitStats {
+  total: number
+  rented: number
+  avg_rent_per_sqm: number | null
+  vacant_units: { id: number; number: string; type: string; vacant_days: number }[]
+  top_damaged: { id: number; number: string; damage_count: number }[]
+}
+const unitStats = ref<UnitStats | null>(null)
+const unitLoading = ref(false)
+
+async function loadUnitStats() {
+  unitLoading.value = true
+  try {
+    const res = await api.get<UnitStats>('/reports/units', {
+      params: { park_id: parkId.value },
+    })
+    unitStats.value = res.data
+  } catch {
+    unitStats.value = { total: 0, rented: 0, avg_rent_per_sqm: null, vacant_units: [], top_damaged: [] }
+  } finally {
+    unitLoading.value = false
+  }
+}
+
+const occupancyRate = computed(() => {
+  if (!unitStats.value || unitStats.value.total === 0) return '–'
+  return ((unitStats.value.rented / unitStats.value.total) * 100).toFixed(1) + '%'
+})
+
+// Occupancy donut (2 segments: rented + vacant)
+const occupancyDonut = computed(() => {
+  const s = unitStats.value
+  if (!s || s.total === 0) return []
+  const items = [
+    { label: 'Vermietet', count: s.rented, color: '#22c55e' },
+    { label: 'Leer', count: s.total - s.rented, color: '#f1f5f9' },
+  ]
+  const total = s.total
+  const cx = 60; const cy = 60; const r = 50; const hole = 30
+  let angle = -Math.PI / 2
+  return items.map((d) => {
+    const slice = (d.count / total) * 2 * Math.PI
+    const x1 = cx + r * Math.cos(angle)
+    const y1 = cy + r * Math.sin(angle)
+    angle += slice
+    const x2 = cx + r * Math.cos(angle)
+    const y2 = cy + r * Math.sin(angle)
+    const xi1 = cx + hole * Math.cos(angle)
+    const yi1 = cy + hole * Math.sin(angle)
+    const xi2 = cx + hole * Math.cos(angle - slice)
+    const yi2 = cy + hole * Math.sin(angle - slice)
+    const large = slice > Math.PI ? 1 : 0
+    const path = `M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${xi1.toFixed(2)},${yi1.toFixed(2)} A${hole},${hole} 0 ${large},0 ${xi2.toFixed(2)},${yi2.toFixed(2)} Z`
+    return { path, color: d.color, label: d.label, count: d.count }
+  })
+})
+
+// --- Finance tab data ---
+interface FinanceStats {
+  outstanding_debt: number
+  by_month: { month: string; revenue: number; plan: number }[]
+  by_payment_method: { method: string; count: number; total: number }[]
+  top_debtors: { customer_name: string; amount: number }[]
+}
+const finStats = ref<FinanceStats | null>(null)
+const finLoading = ref(false)
+const datevModalOpen = ref(false)
+const datevFrom = ref(new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10))
+const datevTo = ref(new Date().toISOString().slice(0, 10))
+
+async function loadFinStats() {
+  finLoading.value = true
+  try {
+    const res = await api.get<FinanceStats>('/reports/finance', {
+      params: { park_id: parkId.value, from: dateFrom.value, to: dateTo.value },
+    })
+    finStats.value = res.data
+  } catch {
+    finStats.value = { outstanding_debt: 0, by_month: [], by_payment_method: [], top_debtors: [] }
+  } finally {
+    finLoading.value = false
+  }
+}
+
+// Revenue vs plan bar chart (grouped)
+const revBarWidth = 480
+const revBarHeight = 180
+const revPadTop = 20
+const revPadBottom = 40
+const revPadLeft = 60
+const revPadRight = 16
+
+const revBarData = computed(() => {
+  const items = finStats.value?.by_month ?? []
+  if (!items.length) return []
+  const allVals = items.flatMap((d) => [d.revenue, d.plan])
+  const max = Math.max(...allVals, 1)
+  const availH = revBarHeight - revPadTop - revPadBottom
+  const availW = revBarWidth - revPadLeft - revPadRight
+  const groupW = availW / items.length
+  const bw = Math.min(18, groupW / 2 - 2)
+  return items.map((d, i) => {
+    const gx = revPadLeft + i * groupW
+    const rh = (d.revenue / max) * availH
+    const ph = (d.plan / max) * availH
+    return {
+      label: d.month.slice(0, 7),
+      lx: gx + groupW / 2,
+      ly: revBarHeight - revPadBottom + 14,
+      revX: gx + groupW / 2 - bw - 1,
+      revY: revPadTop + availH - rh,
+      revH: rh,
+      planX: gx + groupW / 2 + 1,
+      planY: revPadTop + availH - ph,
+      planH: ph,
+      bw,
+    }
+  })
+})
+
+// Payments pie chart (same donut formula)
+const payDonutCx = 70; const payDonutCy = 70; const payDonutR = 55; const payDonutHole = 28
+const payColors = ['#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444', '#94a3b8']
+
+const payDonut = computed(() => {
+  const items = finStats.value?.by_payment_method ?? []
+  const total = items.reduce((s, d) => s + d.count, 0)
+  if (!total) return []
+  let angle = -Math.PI / 2
+  return items.map((d, i) => {
+    const slice = (d.count / total) * 2 * Math.PI
+    const x1 = payDonutCx + payDonutR * Math.cos(angle)
+    const y1 = payDonutCy + payDonutR * Math.sin(angle)
+    angle += slice
+    const x2 = payDonutCx + payDonutR * Math.cos(angle)
+    const y2 = payDonutCy + payDonutR * Math.sin(angle)
+    const xi1 = payDonutCx + payDonutHole * Math.cos(angle)
+    const yi1 = payDonutCy + payDonutHole * Math.sin(angle)
+    const xi2 = payDonutCx + payDonutHole * Math.cos(angle - slice)
+    const yi2 = payDonutCy + payDonutHole * Math.sin(angle - slice)
+    const large = slice > Math.PI ? 1 : 0
+    const path = `M${x1.toFixed(2)},${y1.toFixed(2)} A${payDonutR},${payDonutR} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${xi1.toFixed(2)},${yi1.toFixed(2)} A${payDonutHole},${payDonutHole} 0 ${large},0 ${xi2.toFixed(2)},${yi2.toFixed(2)} Z`
+    return { path, color: payColors[i % payColors.length], label: d.method, count: d.count, pct: ((d.count / total) * 100).toFixed(1) }
+  })
+})
+
+function exportDatev() {
+  const params = new URLSearchParams({
+    format: 'datev',
+    from: datevFrom.value,
+    to: datevTo.value,
+    ...(parkId.value ? { park_id: String(parkId.value) } : {}),
+  })
+  window.open(`/api/reports/finance?${params}`, '_blank')
+  datevModalOpen.value = false
+}
+
 // --- Load on mount and filter change ---
 function loadForTab() {
   if (activeTab.value === 'applications') loadAppStats()
   else if (activeTab.value === 'customers') loadCustStats()
+  else if (activeTab.value === 'units') loadUnitStats()
+  else if (activeTab.value === 'finance') loadFinStats()
 }
 
 watch([activeTab, parkId, dateFrom, dateTo], loadForTab)
@@ -456,16 +616,229 @@ onMounted(loadForTab)
       </template>
     </div>
 
-    <!-- Placeholder tabs -->
-    <div v-if="activeTab === 'units'" class="tab-content placeholder">
-      <p>Einheiten-Reports werden in US-078 implementiert.</p>
+    <!-- Units Tab -->
+    <div v-if="activeTab === 'units'" class="tab-content">
+      <div class="filters-row">
+        <select v-model="parkId" class="filter-ctrl">
+          <option :value="null">Alle Parks</option>
+          <option v-for="p in auth.parks" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </select>
+      </div>
+
+      <div v-if="unitLoading" class="loading-state">Lade...</div>
+      <template v-else>
+        <!-- Metrics -->
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-value">{{ unitStats?.total ?? '–' }}</div>
+            <div class="metric-label">Einheiten gesamt</div>
+          </div>
+          <div class="metric-card highlight">
+            <div class="metric-value">{{ occupancyRate }}</div>
+            <div class="metric-label">Auslastungsrate</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">
+              {{ unitStats?.avg_rent_per_sqm != null ? '€' + unitStats.avg_rent_per_sqm.toFixed(2) : '–' }}
+            </div>
+            <div class="metric-label">Ø Miete / m²</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ unitStats ? unitStats.total - unitStats.rented : '–' }}</div>
+            <div class="metric-label">Leerstand</div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <!-- Occupancy donut -->
+          <div class="chart-card donut-card">
+            <div class="chart-title">Belegung</div>
+            <div v-if="!occupancyDonut.length" class="chart-empty">Keine Daten</div>
+            <div v-else class="donut-wrap">
+              <svg width="120" height="120">
+                <path v-for="(seg, i) in occupancyDonut" :key="i" :d="seg.path" :fill="seg.color" />
+              </svg>
+              <div class="donut-legend">
+                <div v-for="seg in occupancyDonut" :key="seg.label" class="donut-legend-item">
+                  <span class="legend-dot" :style="{ background: seg.color, border: seg.color === '#f1f5f9' ? '1px solid #e2e8f0' : 'none' }"></span>
+                  <span class="legend-lbl">{{ seg.label }}</span>
+                  <span class="legend-pct">{{ seg.count }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top damaged units -->
+          <div class="chart-card">
+            <div class="chart-title">Top Schadenseinheiten</div>
+            <table class="mini-table">
+              <thead>
+                <tr><th>Einheit</th><th>Schäden</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in (unitStats?.top_damaged ?? [])" :key="row.id">
+                  <td>{{ row.number }}</td>
+                  <td class="num">{{ row.damage_count }}</td>
+                </tr>
+                <tr v-if="!(unitStats?.top_damaged ?? []).length">
+                  <td colspan="2" class="empty">Keine Daten</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Vacant units table -->
+        <div class="chart-card">
+          <div class="chart-title">Leerstehende Einheiten (nach Dauer)</div>
+          <table class="mini-table">
+            <thead>
+              <tr><th>Einheit</th><th>Typ</th><th>Leer seit (Tage)</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in (unitStats?.vacant_units ?? [])" :key="row.id">
+                <td>{{ row.number }}</td>
+                <td>{{ row.type }}</td>
+                <td class="num">{{ row.vacant_days }}</td>
+              </tr>
+              <tr v-if="!(unitStats?.vacant_units ?? []).length">
+                <td colspan="3" class="empty">Keine Daten</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </div>
-    <div v-if="activeTab === 'finance'" class="tab-content placeholder">
-      <p>Finanz-Reports werden in US-078 implementiert.</p>
+
+    <!-- Finance Tab -->
+    <div v-if="activeTab === 'finance'" class="tab-content">
+      <div class="filters-row">
+        <select v-model="parkId" class="filter-ctrl">
+          <option :value="null">Alle Parks</option>
+          <option v-for="p in auth.parks" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </select>
+        <input v-model="dateFrom" class="filter-ctrl" type="date" />
+        <input v-model="dateTo" class="filter-ctrl" type="date" />
+        <button class="export-btn datev-btn" @click="datevModalOpen = true">
+          ↓ DATEV Export
+        </button>
+        <button class="export-btn" @click="exportExcel('finance' as 'applications')">
+          ↓ Excel exportieren
+        </button>
+      </div>
+
+      <div v-if="finLoading" class="loading-state">Lade...</div>
+      <template v-else>
+        <!-- Metrics -->
+        <div class="metric-row">
+          <div class="metric-card highlight red">
+            <div class="metric-value">
+              {{ finStats?.outstanding_debt != null ? '€' + finStats.outstanding_debt.toLocaleString('de-DE', { minimumFractionDigits: 2 }) : '–' }}
+            </div>
+            <div class="metric-label">Offene Forderungen</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ finStats?.top_debtors?.length ?? 0 }}</div>
+            <div class="metric-label">Schuldner</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ (finStats?.by_month ?? []).length }}</div>
+            <div class="metric-label">Monate im Zeitraum</div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <!-- Revenue vs plan bar chart -->
+          <div class="chart-card wide">
+            <div class="chart-title">Umsatz vs. Planung (monatlich)</div>
+            <div class="line-legend">
+              <span class="legend-dot" style="background:#3b82f6"></span> Umsatz
+              <span class="legend-dot" style="background:#e2e8f0; border:1px solid #94a3b8"></span> Planung
+            </div>
+            <div v-if="!revBarData.length" class="chart-empty">Keine Daten</div>
+            <svg v-else :width="revBarWidth" :height="revBarHeight" class="bar-chart">
+              <line :x1="revPadLeft - 4" :y1="revPadTop" :x2="revPadLeft - 4" :y2="revBarHeight - revPadBottom" stroke="#e2e8f0" stroke-width="1" />
+              <line :x1="revPadLeft - 4" :y1="revBarHeight - revPadBottom" :x2="revBarWidth - revPadRight" :y2="revBarHeight - revPadBottom" stroke="#e2e8f0" stroke-width="1" />
+              <g v-for="bar in revBarData" :key="bar.label">
+                <rect :x="bar.revX" :y="bar.revY" :width="bar.bw" :height="bar.revH" fill="#3b82f6" rx="2" />
+                <rect :x="bar.planX" :y="bar.planY" :width="bar.bw" :height="bar.planH" fill="#e2e8f0" rx="2" />
+                <text :x="bar.lx" :y="bar.ly" font-size="8" fill="#94a3b8" text-anchor="middle">{{ bar.label }}</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Payments pie -->
+          <div class="chart-card donut-card">
+            <div class="chart-title">Zahlungsarten</div>
+            <div v-if="!payDonut.length" class="chart-empty">Keine Daten</div>
+            <div v-else class="donut-wrap">
+              <svg :width="payDonutCx * 2" :height="payDonutCy * 2">
+                <path v-for="(seg, i) in payDonut" :key="i" :d="seg.path" :fill="seg.color" />
+              </svg>
+              <div class="donut-legend">
+                <div v-for="seg in payDonut" :key="seg.label" class="donut-legend-item">
+                  <span class="legend-dot" :style="{ background: seg.color }"></span>
+                  <span class="legend-lbl">{{ seg.label }}</span>
+                  <span class="legend-pct">{{ seg.pct }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top debtors -->
+        <div class="chart-card">
+          <div class="chart-title">Top Schuldner</div>
+          <table class="mini-table">
+            <thead>
+              <tr><th>Kunde</th><th>Betrag</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in (finStats?.top_debtors ?? [])" :key="row.customer_name">
+                <td>{{ row.customer_name }}</td>
+                <td class="num">€{{ row.amount.toLocaleString('de-DE', { minimumFractionDigits: 2 }) }}</td>
+              </tr>
+              <tr v-if="!(finStats?.top_debtors ?? []).length">
+                <td colspan="2" class="empty">Keine Daten</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </div>
+
+    <!-- Audit Tab (placeholder for US-079) -->
     <div v-if="activeTab === 'audit'" class="tab-content placeholder">
       <p>Audit-Log wird in US-079 implementiert.</p>
     </div>
+
+    <!-- DATEV Export Modal -->
+    <Teleport to="body">
+      <div v-if="datevModalOpen" class="modal-backdrop" @click.self="datevModalOpen = false">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>DATEV Export</h3>
+            <button class="close-btn" @click="datevModalOpen = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-grid">
+              <div class="form-row">
+                <label>Von</label>
+                <input v-model="datevFrom" class="form-ctrl" type="date" />
+              </div>
+              <div class="form-row">
+                <label>Bis</label>
+                <input v-model="datevTo" class="form-ctrl" type="date" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" @click="datevModalOpen = false">Abbrechen</button>
+            <button class="btn-primary" @click="exportDatev">DATEV herunterladen</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -737,5 +1110,137 @@ onMounted(loadForTab)
   border-radius: 8px;
   color: #94a3b8;
   font-size: 0.875rem;
+}
+
+.metric-card.highlight.red {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.datev-btn {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.datev-btn:hover {
+  background: #dcfce7;
+}
+
+/* DATEV modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  min-width: 360px;
+  max-width: 90vw;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-row label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-ctrl {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.form-ctrl:focus {
+  border-color: #3b82f6;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #f1f5f9;
 }
 </style>
