@@ -1046,3 +1046,12 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Route applications/reports must be defined BEFORE applications/:id to avoid path conflict
   - Two separate API calls loaded via Promise.all in loadAll()
 ---
+
+## 2026-03-09 - US-081
+- Created CustomerReportsView.vue at /customers/reports: status metrics (dynamic from API), blacklist count, GDPR deletion count, new-per-month line chart
+- Created UnitReportsView.vue at /units/reports: status metrics with color coding, damage by status metrics, total repair cost, vacancy by type table, repair cost by type table
+- Both have park/date range filters and Excel export
+- Routes added before :id catch-all routes to avoid conflicts
+- Files changed: CustomerReportsView.vue (new), UnitReportsView.vue (new), router/index.ts
+- Typecheck passes
+---
