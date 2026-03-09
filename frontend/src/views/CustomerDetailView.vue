@@ -22,12 +22,14 @@ interface Customer {
   company_name: string | null
   email: string
   phone: string
-  birthdate: string | null
-  street: string
-  house_number: string
+  dob: string | null
+  address: string
   zip: string
   city: string
   country: string
+  id_number: string | null
+  tax_id: string | null
+  notes: string | null
   gdpr_consent_at: string | null
 }
 
@@ -86,7 +88,7 @@ async function load() {
     customer.value = res.data
 
     const [c, i, a, d, l] = await Promise.allSettled([
-      api.get('/customers/' + id + '/contracts'),
+      api.get('/contracts', { params: { customer_id: id, per_page: 50 } }),
       api.get('/invoices', { params: { customer_id: id, per_page: 50 } }),
       api.get('/applications', { params: { customer_id: id, per_page: 50 } }),
       api.get('/customers/' + id + '/documents'),
@@ -256,9 +258,8 @@ onMounted(startEdit)
         <FormInput label="Last Name" :model-value="editForm.last_name ?? ''" @update:model-value="editForm.last_name = $event" />
         <FormInput label="Email" type="email" :model-value="editForm.email ?? ''" @update:model-value="editForm.email = $event" />
         <FormInput label="Phone" :model-value="editForm.phone ?? ''" @update:model-value="editForm.phone = $event" />
-        <FormInput label="Birthdate" type="date" :model-value="editForm.birthdate ?? ''" @update:model-value="editForm.birthdate = $event" />
-        <FormInput label="Street" :model-value="editForm.street ?? ''" @update:model-value="editForm.street = $event" />
-        <FormInput label="House No" :model-value="editForm.house_number ?? ''" @update:model-value="editForm.house_number = $event" />
+        <FormInput label="Birthdate" type="date" :model-value="editForm.dob ?? ''" @update:model-value="editForm.dob = $event" />
+        <FormInput label="Address" :model-value="editForm.address ?? ''" @update:model-value="editForm.address = $event" />
         <FormInput label="ZIP" :model-value="editForm.zip ?? ''" @update:model-value="editForm.zip = $event" />
         <FormInput label="City" :model-value="editForm.city ?? ''" @update:model-value="editForm.city = $event" />
         <FormInput label="Country" :model-value="editForm.country ?? ''" @update:model-value="editForm.country = $event" />

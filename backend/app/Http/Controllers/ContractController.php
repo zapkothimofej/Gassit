@@ -12,7 +12,6 @@ use App\Models\Deposit;
 use App\Models\DocumentTemplate;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Park;
 use App\Models\Unit;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
@@ -273,7 +272,7 @@ class ContractController extends Controller
         ]);
 
         // Set unit to maintenance until inspection completes
-        $unit = $contract->unit;
+        $unit = $contract->unit()->with('park')->first();
         if ($unit) {
             $unit->update(['status' => 'maintenance']);
         }
@@ -285,7 +284,7 @@ class ContractController extends Controller
         $dailyRate    = round((float) $contract->rent_amount / $daysInMonth, 4);
         $proratedRent = round($dailyRate * $daysUsed, 2);
 
-        $park = $unit?->park ?? Park::first();
+        $park = $unit?->park;
         if ($park) {
             $billingMonth = $today->format('Y-m') . '-final';
             $existing = Invoice::where('contract_id', $contract->id)
