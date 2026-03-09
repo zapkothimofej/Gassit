@@ -77,6 +77,12 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['admin', 'main_manager', 'rental_manager', 'park_worker'] },
       },
       {
+        path: 'units/reports',
+        name: 'UnitReports',
+        component: () => import('../views/UnitReportsView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'rental_manager', 'park_worker'] },
+      },
+      {
         path: 'units/:id',
         name: 'UnitDetail',
         component: () => import('../views/UnitDetailView.vue'),
@@ -122,6 +128,12 @@ const routes: RouteRecordRaw[] = [
         path: 'customers',
         name: 'Customers',
         component: () => import('../views/CustomersView.vue'),
+        meta: { roles: ['admin', 'main_manager', 'rental_manager', 'office_worker', 'customer_service'] },
+      },
+      {
+        path: 'customers/reports',
+        name: 'CustomerReports',
+        component: () => import('../views/CustomerReportsView.vue'),
         meta: { roles: ['admin', 'main_manager', 'rental_manager', 'office_worker', 'customer_service'] },
       },
       {
