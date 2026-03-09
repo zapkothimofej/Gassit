@@ -1032,3 +1032,17 @@ Started: Sat Mar  7 00:34:23 WEST 2026
   - Inline diff uses template v-for with `template` + conditional detail row below each data row
   - action-badge CSS classes use dot notation with action value: created/updated/deleted
 ---
+
+## 2026-03-09 - US-080
+- Created ApplicationReportsView.vue at /applications/reports
+- Application metrics section: park/date filter, 4 metric cards (total, conversion rate, completed, avg time new→complete), status breakdown bar chart + status table with percentage column
+- Waiting list section: 3 metric cards (total, avg wait days, unit types count), entries by unit type table
+- Export to Excel: window.open /api/reports/applications?format=xlsx
+- API: GET /reports/applications and GET /reports/waiting-list (graceful error fallback)
+- Added route applications/reports to router (same roles as applications)
+- Files changed: ApplicationReportsView.vue (new), router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Route applications/reports must be defined BEFORE applications/:id to avoid path conflict
+  - Two separate API calls loaded via Promise.all in loadAll()
+---
