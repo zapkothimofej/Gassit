@@ -136,7 +136,7 @@ async function saveNotifPrefs() {
   savingPrefs.value = true
   try {
     const prefs = Object.fromEntries(notifPrefs.value.map(p => [p.key, p.enabled]))
-    await api.put('/auth/notification-preferences', prefs)
+    await api.put('/auth/notification-preferences', { notification_preferences: prefs })
     showToast('Benachrichtigungseinstellungen gespeichert.')
   } catch {
     // Endpoint may not exist yet — still show success for UI completeness

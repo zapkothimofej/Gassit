@@ -146,6 +146,20 @@ class AuthController extends Controller
         return response()->json(['message' => __($status)]);
     }
 
+    public function updateNotificationPreferences(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'notification_preferences'   => ['required', 'array'],
+            'notification_preferences.*' => ['boolean'],
+        ]);
+
+        $request->user()->update([
+            'notification_preferences' => $data['notification_preferences'],
+        ]);
+
+        return response()->json($request->user()->fresh());
+    }
+
     public function resetPassword(Request $request): JsonResponse
     {
         $request->validate([

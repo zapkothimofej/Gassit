@@ -21,6 +21,7 @@ class User extends Authenticatable
         'active',
         'login_attempts',
         'two_factor_enabled',
+        'notification_preferences',
     ];
 
     protected $hidden = [
@@ -37,11 +38,12 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'  => 'datetime',
-            'password'           => 'hashed',
-            'active'             => 'boolean',
-            'two_factor_enabled' => 'boolean',
-            'totp_secret'        => 'encrypted',
+            'email_verified_at'        => 'datetime',
+            'password'                 => 'hashed',
+            'active'                   => 'boolean',
+            'two_factor_enabled'       => 'boolean',
+            'totp_secret'              => 'encrypted',
+            'notification_preferences' => 'array',
         ];
     }
 }

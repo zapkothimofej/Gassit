@@ -51,6 +51,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/2fa/setup', [TwoFactorController::class, 'setup']);
         Route::post('/2fa/enable', [TwoFactorController::class, 'enable']);
         Route::post('/2fa/disable', [TwoFactorController::class, 'disable']);
+        Route::put('/notification-preferences', [AuthController::class, 'updateNotificationPreferences']);
     });
 });
 
