@@ -148,9 +148,13 @@ export const handlers = [
 
   // Auth
   http.post(`${BASE}/auth/login`, async ({ request }) => {
-    const body = await request.json() as { email?: string }
-    const user = users.find(u => u.email === body?.email) ?? users[0]
-    return HttpResponse.json({ token: 'mock-token-abc123', user })
+    const body = await request.json() as { email?: string; password?: string }
+    if (body?.email === 'admin' && body?.password === '1234') {
+      return HttpResponse.json({ token: 'mock-token-abc123', user: users[0] })
+    }
+    const user = users.find(u => u.email === body?.email)
+    if (user) return HttpResponse.json({ token: 'mock-token-abc123', user })
+    return HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 })
   }),
   http.get(`${BASE}/auth/me`, () => HttpResponse.json(users[0])),
   http.post(`${BASE}/auth/logout`, () => HttpResponse.json({ message: 'ok' })),

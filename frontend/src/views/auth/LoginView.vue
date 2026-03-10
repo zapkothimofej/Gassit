@@ -12,6 +12,11 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
+async function skipLogin() {
+  await auth.login('admin', '1234')
+  router.push('/dashboard')
+}
+
 async function submit() {
   error.value = ''
   loading.value = true
@@ -37,12 +42,13 @@ async function submit() {
     <form class="login-form" @submit.prevent="submit">
       <h1>GASSIT</h1>
       <p v-if="error" class="error">{{ error }}</p>
-      <input v-model="email" type="email" placeholder="Email" required />
+      <input v-model="email" type="text" placeholder="Username" required />
       <input v-model="password" type="password" placeholder="Password" required />
       <button type="submit" :disabled="loading">
         {{ loading ? 'Signing in…' : 'Sign in' }}
       </button>
       <a href="/password-reset" class="forgot-link">Forgot password?</a>
+      <button type="button" class="skip-btn" @click="skipLogin">Demo: Skip Login</button>
     </form>
   </div>
 </template>
@@ -107,5 +113,19 @@ button:disabled {
   color: #3b82f6;
   text-align: center;
   text-decoration: none;
+}
+
+.skip-btn {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.skip-btn:hover {
+  background: #e2e8f0;
 }
 </style>
