@@ -5,7 +5,7 @@ import App from './App.vue'
 import router from './router'
 
 async function bootstrap() {
-  if (import.meta.env.DEV) {
+  if (true) {
     const { worker } = await import('./mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }
