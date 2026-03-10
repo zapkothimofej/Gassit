@@ -116,7 +116,7 @@ class DunningService
         });
     }
 
-    public function resolveCustomer(Customer $customer, string $reference, string $notes): int
+    public function resolveCustomer(Customer $customer, string $reference): int
     {
         $overdueInvoices = Invoice::where('customer_id', $customer->id)
             ->whereDate('due_date', '<', now())

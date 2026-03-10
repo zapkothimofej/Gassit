@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Customer;
-use App\Models\Invoice;
 use App\Services\DunningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -137,16 +136,11 @@ class DunningController extends Controller
 
         $customer = Customer::findOrFail($customerId);
 
-        $overdueInvoices = Invoice::where('customer_id', $customerId)
-            ->whereDate('due_date', '<', now())
-            ->whereNotIn('status', ['paid', 'cancelled'])
-            ->get();
+        $count = $this->dunningService->resolveCustomer($customer, $data['reference']);
 
-        if ($overdueInvoices->isEmpty()) {
+        if ($count === 0) {
             return response()->json(['message' => 'No overdue invoices to resolve.'], 422);
         }
-
-        $count = $this->dunningService->resolveCustomer($customer, $data['reference'], $data['notes']);
 
         AuditLog::create([
             'user_id'    => $request->user()->id,
