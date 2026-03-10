@@ -1,4 +1,5 @@
 import api from './axios'
+import { get, post } from './client'
 
 export interface InvoiceItem {
   id: number
@@ -48,13 +49,11 @@ export interface CreateInvoiceItem {
 }
 
 export function fetchInvoices(filters: InvoiceFilters = {}) {
-  return api.get<{ data: InvoiceSummary[]; total: number; last_page: number }>('/invoices', {
-    params: filters,
-  })
+  return get<{ data: InvoiceSummary[]; total: number; last_page: number }>('/invoices', { params: filters })
 }
 
 export function fetchInvoice(id: number) {
-  return api.get<InvoiceDetail>('/invoices/' + id)
+  return get<InvoiceDetail>('/invoices/' + id)
 }
 
 export function createInvoice(data: {
@@ -65,7 +64,7 @@ export function createInvoice(data: {
   tax_rate?: number
   items: CreateInvoiceItem[]
 }) {
-  return api.post<InvoiceDetail>('/invoices', data)
+  return post<InvoiceDetail>('/invoices', data)
 }
 
 export function getInvoicePdfUrl(id: number) {
@@ -73,15 +72,15 @@ export function getInvoicePdfUrl(id: number) {
 }
 
 export function sendInvoice(id: number) {
-  return api.post('/invoices/' + id + '/send')
+  return post('/invoices/' + id + '/send')
 }
 
 export function cancelInvoice(id: number) {
-  return api.post('/invoices/' + id + '/cancel')
+  return post('/invoices/' + id + '/cancel')
 }
 
 export function createPaymentLink(invoiceId: number) {
-  return api.post<{ payment_url: string; expires_at: string }>('/invoices/' + invoiceId + '/payment-link')
+  return post<{ payment_url: string; expires_at: string }>('/invoices/' + invoiceId + '/payment-link')
 }
 
 export function datevExport(params: { from: string; to: string; park_id?: number | null }) {
@@ -92,7 +91,7 @@ export function datevExport(params: { from: string; to: string; park_id?: number
 }
 
 export function searchCustomers(search: string) {
-  return api.get<{ data: Array<{ id: number; first_name: string; last_name: string; company_name: string | null; type: string }> }>(
+  return get<{ data: Array<{ id: number; first_name: string; last_name: string; company_name: string | null; type: string }> }>(
     '/customers',
     { params: { search, per_page: 10 } },
   )

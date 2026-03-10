@@ -48,16 +48,14 @@ function showToast(msg: string) {
 async function loadAll() {
   loading.value = true
   try {
-    const res = await fetchContract(contractId)
-    contract.value = res.data
+    contract.value = await fetchContract(contractId)
     try {
-      const dep = await fetchContractDeposit(contractId)
-      deposit.value = dep.data
+      deposit.value = await fetchContractDeposit(contractId)
     } catch {
       deposit.value = null
     }
     const inv = await fetchInvoices({ contract_id: contractId, per_page: 50 })
-    invoices.value = inv.data.data ?? []
+    invoices.value = inv.data ?? []
   } finally {
     loading.value = false
   }
@@ -103,7 +101,7 @@ async function doRenew() {
     const res = await renewContract(contractId, renewForm.value)
     showRenewModal.value = false
     showToast('Contract renewed.')
-    const newId = (res.data as Record<string, Record<string, number>>).new_contract?.id
+    const newId = res.new_contract?.id
     if (newId) router.push('/contracts/' + newId)
   } finally {
     renewing.value = false

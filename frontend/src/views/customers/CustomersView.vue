@@ -52,8 +52,8 @@ async function load() {
       page: filters.page,
       per_page: 20,
     })
-    customers.value = res.data.data ?? []
-    totalPages.value = res.data.last_page ?? 1
+    customers.value = res.data ?? []
+    totalPages.value = res.last_page ?? 1
   } finally {
     loading.value = false
   }

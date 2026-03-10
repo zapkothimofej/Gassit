@@ -54,8 +54,8 @@ async function load() {
       page: filters.page,
       per_page: 20,
     })
-    invoices.value = res.data.data ?? []
-    totalPages.value = res.data.last_page ?? 1
+    invoices.value = res.data ?? []
+    totalPages.value = res.last_page ?? 1
   } finally {
     loading.value = false
   }
@@ -130,7 +130,7 @@ async function onCustomerSearch() {
   if (!customerSearch.value.trim()) { customerResults.value = []; return }
   searchTimer = setTimeout(async () => {
     const res = await searchCustomers(customerSearch.value)
-    customerResults.value = res.data.data ?? []
+    customerResults.value = res.data ?? []
   }, 300)
 }
 
@@ -161,7 +161,7 @@ async function submitCreate() {
       items: cForm.items,
     })
     showCreateModal.value = false
-    router.push('/invoices/' + res.data.id)
+    router.push('/invoices/' + res.id)
   } finally {
     creating.value = false
   }

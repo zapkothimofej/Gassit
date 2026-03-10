@@ -1,4 +1,5 @@
 import api from './axios'
+import { get, post } from './client'
 
 export interface Customer {
   id: number
@@ -24,13 +25,11 @@ export interface CustomerFilters {
 }
 
 export function fetchCustomers(filters: CustomerFilters = {}) {
-  return api.get<{ data: Customer[]; total: number; last_page: number }>('/customers', {
-    params: filters,
-  })
+  return get<{ data: Customer[]; total: number; last_page: number }>('/customers', { params: filters })
 }
 
 export function createCustomer(data: Record<string, unknown>) {
-  return api.post<Customer>('/customers', data)
+  return post<Customer>('/customers', data)
 }
 
 export function exportCustomers(filters: CustomerFilters = {}) {

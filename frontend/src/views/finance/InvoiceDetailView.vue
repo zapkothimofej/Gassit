@@ -30,8 +30,7 @@ function showToast(msg: string) {
 async function load() {
   loading.value = true
   try {
-    const res = await fetchInvoice(invoiceId)
-    invoice.value = res.data
+    invoice.value = await fetchInvoice(invoiceId)
   } finally {
     loading.value = false
   }
@@ -81,7 +80,7 @@ async function generateLink() {
   generatingLink.value = true
   try {
     const res = await createPaymentLink(invoiceId)
-    paymentLink.value = res.data.payment_url
+    paymentLink.value = res.payment_url
     showPaymentModal.value = true
   } finally {
     generatingLink.value = false

@@ -1,4 +1,5 @@
 import api from './axios'
+import { get, post } from './client'
 
 export interface ContractSignature {
   id: number
@@ -66,46 +67,44 @@ export interface Invoice {
 }
 
 export function fetchContracts(filters: ContractFilters = {}) {
-  return api.get<{ data: Contract[]; total: number; last_page: number }>('/contracts', {
-    params: filters,
-  })
+  return get<{ data: Contract[]; total: number; last_page: number }>('/contracts', { params: filters })
 }
 
 export function fetchContract(id: number) {
-  return api.get<ContractDetail>('/contracts/' + id)
+  return get<ContractDetail>('/contracts/' + id)
 }
 
 export function sendForSignature(id: number) {
-  return api.post<{ contract: ContractDetail; esign_provider_id: string; sign_url: string }>(
+  return post<{ contract: ContractDetail; esign_provider_id: string; sign_url: string }>(
     '/contracts/' + id + '/send-for-signature',
   )
 }
 
 export function activateContract(id: number) {
-  return api.post('/contracts/' + id + '/activate')
+  return post('/contracts/' + id + '/activate')
 }
 
 export function terminateContract(
   id: number,
   data: { termination_type: string; termination_notice_date: string; termination_reason_id?: number | null },
 ) {
-  return api.post('/contracts/' + id + '/terminate', data)
+  return post('/contracts/' + id + '/terminate', data)
 }
 
 export function renewContract(id: number, data: { start_date: string; rent_amount: string }) {
-  return api.post('/contracts/' + id + '/renew', data)
+  return post<{ new_contract: { id: number } }>('/contracts/' + id + '/renew', data)
 }
 
 export function fetchContractDeposit(contractId: number) {
-  return api.get<Deposit>('/contracts/' + contractId + '/deposit')
+  return get<Deposit>('/contracts/' + contractId + '/deposit')
 }
 
 export function returnDeposit(depositId: number, data: Record<string, unknown>) {
-  return api.post('/deposits/' + depositId + '/return', data)
+  return post('/deposits/' + depositId + '/return', data)
 }
 
 export function fetchInvoices(filters: { contract_id?: number; page?: number; per_page?: number } = {}) {
-  return api.get<{ data: Invoice[]; total: number; last_page: number }>('/invoices', { params: filters })
+  return get<{ data: Invoice[]; total: number; last_page: number }>('/invoices', { params: filters })
 }
 
 export function exportContracts(filters: ContractFilters = {}) {
