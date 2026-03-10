@@ -10,7 +10,7 @@
       "acceptanceCriteria": [
         "Create users table: id, name, email, password, role (enum: admin|main_manager|rental_manager|park_worker|accountant|office_worker|customer_service), active (bool, default true), remember_token, timestamps",
         "Create parks table: id, name, address, city, zip, country, phone, email, bank_iban, bank_bic, bank_owner, logo_path, primary_color (hex), language (default 'de'), timestamps, soft deletes",
-        "Create park_user pivot table: user_id, park_id, unique(user_id, park_id) â€” admin/main_manager access all parks implicitly",
+        "Create park_user pivot table: user_id, park_id, unique(user_id, park_id) — admin/main_manager access all parks implicitly",
         "Create password_reset_tokens table: email, token, created_at",
         "Create personal_access_tokens table for Laravel Sanctum",
         "Run all migrations without error",

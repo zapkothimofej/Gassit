@@ -198,6 +198,7 @@ class CustomerController extends Controller
             'last_name'       => '[gelöscht]',
             'company_name'    => null,
             'email'           => "gdpr_deleted_{$customer->id}@deleted.invalid",
+            'email_hash'      => null,
             'phone'           => '[gelöscht]',
             'dob'             => null,
             'id_number'       => null,
@@ -290,6 +291,25 @@ class CustomerController extends Controller
         return response()->json($query->paginate(20));
     }
 
+    private static array $piiFields = [
+        'first_name', 'last_name', 'email', 'phone', 'dob', 'address', 'id_number', 'tax_id',
+    ];
+
+    private function redactPii(?array $data): ?array
+    {
+        if ($data === null) {
+            return null;
+        }
+
+        foreach (self::$piiFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = '[REDACTED]';
+            }
+        }
+
+        return $data;
+    }
+
     private function writeAuditLog(Request $request, string $action, Customer $model, ?array $old, ?array $new): void
     {
         AuditLog::create([
@@ -297,8 +317,8 @@ class CustomerController extends Controller
             'action'     => $action,
             'model_type' => Customer::class,
             'model_id'   => $model->id,
-            'old_values' => $old,
-            'new_values' => $new,
+            'old_values' => $this->redactPii($old),
+            'new_values' => $this->redactPii($new),
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);

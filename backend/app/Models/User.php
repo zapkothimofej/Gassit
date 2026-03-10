@@ -20,7 +20,6 @@ class User extends Authenticatable
         'role',
         'active',
         'login_attempts',
-        'totp_secret',
         'two_factor_enabled',
     ];
 

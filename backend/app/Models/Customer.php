@@ -65,7 +65,7 @@ class Customer extends Model
     protected static function booted(): void
     {
         static::saving(function (Customer $customer) {
-            if ($customer->isDirty('email') && $customer->getAttributes()['email'] !== null) {
+            if ($customer->isDirty('email') && $customer->getAttributes()['email'] !== null && $customer->gdpr_deleted_at === null) {
                 $rawEmail = $customer->email;
                 $customer->email_hash = hash_hmac('sha256', strtolower($rawEmail), config('app.key'));
             }

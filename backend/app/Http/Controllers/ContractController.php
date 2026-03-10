@@ -175,7 +175,7 @@ class ContractController extends Controller
     public function esignWebhook(Request $request): JsonResponse
     {
         $secret = config('services.esign.webhook_secret');
-        if (!$secret || $request->header('X-Esign-Secret') !== $secret) {
+        if (!$secret || !hash_equals($secret, $request->header('X-Esign-Secret') ?? '')) {
             return response()->json(['message' => 'Unauthorized.'], 401);
         }
 

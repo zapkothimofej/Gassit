@@ -18,6 +18,11 @@ class ReportController extends Controller
 {
     public function applications(Request $request)
     {
+        $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to'   => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         $user   = $request->user();
         $parkId = $request->query('park_id');
         $from   = $request->query('from');
@@ -52,6 +57,11 @@ class ReportController extends Controller
 
     public function customers(Request $request)
     {
+        $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to'   => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         $user   = $request->user();
         $parkId = $request->query('park_id');
         $from   = $request->query('from');
@@ -115,6 +125,11 @@ class ReportController extends Controller
 
     public function finance(Request $request)
     {
+        $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to'   => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         $user   = $request->user();
         $parkId = $request->query('park_id');
         $from   = $request->query('from');
@@ -150,6 +165,11 @@ class ReportController extends Controller
 
     public function audit(Request $request)
     {
+        $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to'   => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         $user   = $request->user();
         $parkId = $request->query('park_id');
         $from   = $request->query('from');

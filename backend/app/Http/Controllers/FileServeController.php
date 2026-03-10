@@ -15,6 +15,11 @@ class FileServeController extends Controller
         }
 
         $path = $request->query('path');
+
+        if (! $path || str_contains($path, '..') || str_starts_with($path, '/')) {
+            abort(400, 'Invalid path.');
+        }
+
         $disk = config('filesystems.default', 'local');
 
         if (! Storage::disk($disk)->exists($path)) {

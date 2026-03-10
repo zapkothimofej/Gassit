@@ -7,11 +7,13 @@ use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\MailTemplate;
 use App\Models\SentEmail;
+use App\Traits\SanitizesHtml;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MailController extends Controller
 {
+    use SanitizesHtml;
     // -------------------------------------------------------------------------
     // Mail Templates CRUD
     // -------------------------------------------------------------------------
@@ -345,16 +347,12 @@ class MailController extends Controller
     // Helpers
     // -------------------------------------------------------------------------
 
-    private function sanitizeHtml(string $html): string
-    {
-        $allowed = '<a><b><strong><i><em><u><s><br><p><div><span><ul><ol><li><h1><h2><h3><h4><table><thead><tbody><tr><th><td><img>';
-        return strip_tags($html, $allowed);
-    }
+    // sanitizeHtml provided by SanitizesHtml trait
 
     private function substitute(string $text, array $variables): string
     {
         foreach ($variables as $key => $value) {
-            $text = str_replace('{' . $key . '}', (string) $value, $text);
+            $text = str_replace('{' . $key . '}', htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'), $text);
         }
         return $text;
     }

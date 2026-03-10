@@ -13,10 +13,16 @@ class TwoFactorController extends Controller
     public function setup(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        if ($user->two_factor_enabled) {
+            return response()->json(['message' => '2FA is already enabled. Disable it first to reconfigure.'], 422);
+        }
+
         $google2fa = new Google2FA();
 
         $secret = $google2fa->generateSecretKey();
-        $user->update(['totp_secret' => $secret]);
+        $user->totp_secret = $secret;
+        $user->save();
 
         $qrCodeUri = $google2fa->getQRCodeUrl(
             config('app.name'),
@@ -104,10 +110,9 @@ class TwoFactorController extends Controller
             return response()->json(['message' => 'Password confirmation failed.'], 422);
         }
 
-        $user->update([
-            'two_factor_enabled' => false,
-            'totp_secret' => null,
-        ]);
+        $user->two_factor_enabled = false;
+        $user->totp_secret = null;
+        $user->save();
 
         return response()->json(['message' => '2FA disabled successfully.']);
     }

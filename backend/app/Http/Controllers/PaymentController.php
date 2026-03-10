@@ -90,10 +90,12 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Invalid signature.'], 401);
         }
 
-        $mollieId = $request->input('id');
-        if (!$mollieId) {
-            return response()->json(['message' => 'Missing payment id.'], 422);
-        }
+        $data = $request->validate([
+            'id'     => ['required', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:paid,failed,cancelled'],
+            'failure_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        $mollieId = $data['id'];
 
         $payment = Payment::where('mollie_payment_id', $mollieId)->first();
         if (!$payment) {
@@ -107,7 +109,7 @@ class PaymentController extends Controller
         }
 
         // Stub: determine status from webhook payload
-        $status = $request->input('status', 'paid');
+        $status = $data['status'] ?? 'paid';
 
         if ($status === 'paid') {
             $payment->update(['status' => 'paid', 'paid_at' => now()]);
@@ -121,7 +123,7 @@ class PaymentController extends Controller
             }
         } elseif ($status === 'failed') {
             $maxRetries = (int) (SystemSetting::where('key', 'payment_retry_max')->value('value') ?? 3);
-            $payment->update(['status' => 'failed', 'failure_reason' => $request->input('failure_reason', 'Payment failed')]);
+            $payment->update(['status' => 'failed', 'failure_reason' => $data['failure_reason'] ?? 'Payment failed']);
 
             if ($payment->retry_count < $maxRetries) {
                 RetryPayment::dispatch($payment->id)->delay(now()->addHours(24));

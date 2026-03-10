@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\DocumentTemplate;
+use App\Traits\SanitizesHtml;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DocumentTemplateController extends Controller
 {
+    use SanitizesHtml;
     public function index(Request $request): JsonResponse
     {
         $query = DocumentTemplate::with('park');
@@ -95,11 +97,14 @@ class DocumentTemplateController extends Controller
         $template = DocumentTemplate::findOrFail($id);
 
         $html = $template->template_html ?? '<p>No template content.</p>';
+        $html = $this->sanitizeHtml($html);
 
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
         ]);
     }
+
+    // sanitizeHtml provided by SanitizesHtml trait
 
     public function clone(Request $request, int $id): JsonResponse
     {

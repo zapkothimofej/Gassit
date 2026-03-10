@@ -1,0 +1,1176 @@
+## Codebase Patterns
+- Laravel backend lives in `backend/` subdirectory
+- Use MariaDB portable (extracted to /tmp/mariadb-10.11.10-winx64) for local dev; start with: `/tmp/mariadb-10.11.10-winx64/bin/mysqld.exe --datadir=/tmp/mariadb-data --port=3306 --console &`
+- DB: gassit on 127.0.0.1:3306, root with no password
+- Run migrations: `cd backend && php artisan migrate --force`
+- PHP syntax check: `php -l <file>`
+- Composer at ~/bin/composer (installed manually)
+- Laravel 12 with Sanctum 4.x for API auth
+- `park_user` pivot: admin/main_manager have implicit park access (enforced in app logic, not DB)
+
+# Ralph Progress Log
+Started: Sat Mar  7 00:34:23 WEST 2026
+---
+
+## 2026-03-07 - US-001
+- Created Laravel 12 project in `backend/` with Composer
+- Modified users migration to add `role` (enum) and `active` (bool) columns
+- Created parks migration with soft deletes
+- Created park_user pivot migration with unique constraint
+- Published Sanctum migration for personal_access_tokens
+- Updated User model (fillable + casts + parks BelongsToMany)
+- Created Park model with SoftDeletes + users BelongsToMany
+- Installed MariaDB portable to /tmp for local migration testing
+- All 6 migrations ran successfully
+- **Learnings for future iterations:**
+  - MariaDB portable at /tmp/mariadb-10.11.10-winx64 — start server before running migrations
+  - The `gassit` DB must exist before running migrations (create via mysql -u root -e "CREATE DATABASE gassit")
+  - Laravel default users migration already includes password_reset_tokens and sessions tables
+  - Sanctum migration published via `php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --tag="sanctum-migrations"`
+---
+
+## 2026-03-07 - US-002
+- Created unit_types migration (park_id FK, base_rent/deposit_amount/size_m2 decimal, floor_plan_path)
+- Created unit_features migration (unit_type_id FK, feature string)
+- Created units migration (park_id+unit_type_id FK, status enum, soft deletes)
+- Created unit_photos migration (unit_id FK, path, caption, sort_order)
+- Created models: UnitType, UnitFeature, Unit (SoftDeletes), UnitPhoto with relationships
+- All 4 migrations ran successfully
+- **Learnings for future iterations:**
+  - MariaDB was already running from previous iteration — check before starting
+  - Use `python3` heredoc approach to update prd.json (sed multiline doesn't work reliably in bash)
+  - Models written via Bash cat heredoc (Write tool has "not read yet" guard issues with artisan-created stub files)
+---
+
+## 2026-03-07 - US-003
+- Created customers migration (type enum, full address fields, GDPR timestamps, soft deletes)
+- Created blacklist migration (customer_id FK, added_by/removed_by user FKs, timestamps)
+- Created customer_documents migration (customer_id FK, uploaded_by user FK)
+- Created models: Customer (SoftDeletes), Blacklist, CustomerDocument with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - FK columns to users table use `->constrained('users')` not `->constrained()` since column name differs from table
+  - Null-able FKs: `foreignId('removed_by')->nullable()->constrained('users')` works correctly
+---
+
+## 2026-03-07 - US-004
+- Created applications migration (park/customer/unit_type/unit FKs, status enum, assigned_to nullable FK, source enum)
+- Created waiting_list migration (converted_application_id nullable FK, soft deletes)
+- Created waiting_list_notifications migration (waiting_list_id FK via named table, method/response enums)
+- Created models: Application, WaitingList (SoftDeletes), WaitingListNotification with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - `->constrained('waiting_list')` needed when table name doesn't follow convention
+  - `nullOnDelete()` used for optional FKs that should null rather than cascade
+---
+
+## 2026-03-07 - US-005
+- Created contracts migration (application/customer/unit FKs, status enum, signed_at/terminated_at timestamps, soft deletes)
+- Created contract_signatures migration (contract_id FK, signer_type enum, ip_address)
+- Created contract_renewals migration (contract_id + new_contract_id FKs to contracts, new_rent_amount)
+- Created models: Contract (SoftDeletes), ContractSignature, ContractRenewal with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - `termination_reason_id` references `reference_items` (US-013, not yet created) — used `unsignedBigInteger` without FK constraint to avoid migration failure
+  - `contract_renewals` has two FKs to `contracts` — second one needs explicit `->constrained('contracts')`
+---
+
+## 2026-03-07 - US-006
+- Created deposits migration (contract_id/customer_id/park_id FKs, status enum, return_method nullable enum, mollie_payment_id)
+- Created Deposit model with BelongsTo relationships (contract, customer, park)
+- Migration ran successfully
+- **Learnings for future iterations:**
+  - Nullable enum column: `->enum('return_method', [...])->nullable()` works correctly
+  - No soft deletes on deposits — financial records should be immutable
+---
+
+## 2026-03-07 - US-007
+- Created invoices, invoice_items, payments, dunning_records migrations
+- Created Invoice, InvoiceItem, Payment, DunningRecord models
+- Files: backend/database/migrations/2024_01_07_000001-000004_*.php, backend/app/Models/{Invoice,InvoiceItem,Payment,DunningRecord}.php
+- **Learnings for future iterations:**
+  - invoices references contracts (nullable FK), customers, parks
+  - dunning_records.level uses unsignedTinyInteger (no enum — int 1-3 per spec)
+  - payments.currency default 'EUR' as string(3)
+---
+
+## 2026-03-07 - US-007
+- Created invoices migration (contract_id nullable FK, customer_id/park_id FKs, status enum, soft deletes)
+- Created invoice_items migration (invoice_id FK, item_type enum, quantity/unit_price/total decimals)
+- Created payments migration (invoice_id FK, payment_method enum, status enum, mollie fields)
+- Created dunning_records migration (invoice_id/customer_id FKs, level tinyint, fee_amount decimal)
+- Created models: Invoice (SoftDeletes), InvoiceItem, Payment, DunningRecord with relationships
+- All 4 migrations ran successfully
+- **Learnings for future iterations:**
+  - nullable FK with nullOnDelete: `foreignId('contract_id')->nullable()->constrained()->nullOnDelete()` works
+  - `unsignedTinyInteger('level')` for small integer range (1-3 dunning levels)
+  - DunningRecord has both invoice_id and customer_id FKs (redundant but useful for direct queries)
+---
+
+## 2026-03-07 - US-008
+- Created vendors migration (park_id nullable FK, soft deletes)
+- Created damage_reports migration (unit_id/contract_id/reported_by/assigned_vendor_id FKs, status enum, soft deletes)
+- Created damage_photos migration (damage_report_id FK, taken_at nullable)
+- Created vendor_invoices migration (vendor_id/damage_report_id FKs, paid_at nullable)
+- Created models: Vendor (SoftDeletes), DamageReport (SoftDeletes), DamagePhoto, VendorInvoice with relationships
+- All 4 migrations ran successfully
+- **Learnings for future iterations:**
+  - vendors table must be created before damage_reports (FK dependency: assigned_vendor_id)
+  - `reported_by` FK uses `->constrained('users')` since column name differs from table
+  - `assigned_vendor_id` FK uses `->constrained('vendors')->nullOnDelete()` for nullable assignment
+---
+
+## 2026-03-07 - US-009
+- Created electricity_meters migration (unit_id FK, meter_type enum, active bool, installed_at date)
+- Created electricity_readings migration (meter_id FK to electricity_meters, recorded_by FK to users, consumption nullable)
+- Created electricity_pricing migration (park_id FK, price_per_kwh decimal(10,6), valid_from/valid_to dates)
+- Created models: ElectricityMeter, ElectricityReading, ElectricityPricing with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - FK to non-conventional table name: `->constrained('electricity_meters')` needed for meter_id
+  - price_per_kwh uses decimal(10,6) for high precision kWh pricing
+---
+
+## 2026-03-07 - US-010
+- Created tasks migration (park_id/assigned_to/created_by FKs, type/status/priority enums, polymorphic related_type/related_id, soft deletes)
+- Created notifications migration (user_id FK, polymorphic related_type/related_id, read_at nullable)
+- Created audit_logs migration (user_id nullable FK, old_values/new_values JSON, model_type/model_id polymorphic)
+- Created models: Task (SoftDeletes), Notification, AuditLog with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - Polymorphic columns: use `string('related_type')->nullable()` + `unsignedBigInteger('related_id')->nullable()` (not morphs() to keep nullable)
+  - JSON columns: `$table->json('old_values')->nullable()` works in MariaDB
+  - Notification model name conflicts with Laravel's built-in - using custom model is fine as long as it's in App\Models
+---
+
+## 2026-03-07 - US-011
+- Created mail_templates migration (park_id nullable FK, template_type enum, variables_json JSON, active bool)
+- Created sent_emails migration (customer_id/template_id/sent_by nullable FKs, status enum)
+- Created document_templates migration (park_id nullable FK, document_type enum, version int, active bool)
+- Created models: MailTemplate, SentEmail, DocumentTemplate with relationships
+- All 3 migrations ran successfully
+- **Learnings for future iterations:**
+  - `longText` for HTML content (body_html, template_html) — handles large templates
+  - sent_emails.template_id FK uses `->constrained('mail_templates')` (non-standard name)
+---
+
+## 2026-03-07 - US-012
+- Created discount_rules, insurance_options, revenue_targets, system_settings, llm_access_codes migrations
+- system_settings seeded with 7 defaults in the migration using DB::table()->insert()
+- Created models: DiscountRule, InsuranceOption, RevenueTarget, SystemSetting, LlmAccessCode
+- All 5 migrations ran successfully
+- **Learnings for future iterations:**
+  - Seeding defaults in migration: use `DB::table('table')->insert([...])` in the up() method
+  - `unsignedSmallInteger` for year, `unsignedTinyInteger` for month (efficient storage)
+---
+
+## 2026-03-07 - US-013
+- Created reference_items migration (category enum, seeded 13 items: cities, countries, termination reasons)
+- Created employees migration (user_id/park_id nullable FKs, soft deletes)
+- Created models: ReferenceItem, Employee (SoftDeletes) with relationships
+- All 2 migrations ran successfully
+- **Learnings for future iterations:**
+  - reference_items.category enum includes all 7 categories; contracts.termination_reason_id can now use a proper FK if needed
+  - reference_items seeded directly in migration (small, stable lookup data)
+---
+
+## 2026-03-07 - US-014
+- Added login_attempts column to users via migration
+- Updated User model with HasApiTokens trait
+- Created AuthController with login, logout, refresh, forgot-password, reset-password
+- Created routes/api.php with auth routes (login/forgot-password/reset-password public; logout/refresh protected)
+- Registered api routes in bootstrap/app.php
+- Added ResetPassword::createUrlUsing() to point to frontend URL (avoids 'password.reset' route requirement)
+- Updated phpunit.xml to use MySQL (gassit_test DB) since pdo_sqlite not installed
+- All 8 auth tests pass
+- **Learnings for future iterations:**
+  - PHP install lacks pdo_sqlite — always use MySQL for tests (gassit_test DB)
+  - `RefreshDatabase` with MySQL uses transactions (not re-migration), so migration seeds persist; use `updateOrCreate` not `create` for seeded data in tests
+  - `ResetPassword::createUrlUsing()` needed for API-only apps (no web routes for password.reset)
+  - login_max_attempts from system_settings: use `ort 5` as default if not found
+---
+
+## 2026-03-07 - US-015
+- Installed pragmarx/google2fa:^8.0 for TOTP
+- Added totp_secret and two_factor_enabled columns to users via migration
+- Created TwoFactorController: setup, enable, verify, disable endpoints
+- Modified AuthController login to return {requires_2fa, temp_token} when 2FA enabled
+- Added 2FA routes: /2fa/verify (public), /2fa/setup+enable+disable (protected)
+- All 6 2FA tests pass + all 8 auth tests still pass
+- **Learnings for future iterations:**
+  - TOTP verify endpoint is public (needs temp_token in body, not Bearer)
+  - `createToken('temp-2fa')` naming allows distinguishing temp from full tokens in TwoFactorController
+  - Google2FA::getCurrentOtp() in tests generates current valid TOTP code
+---
+
+## 2026-03-07 - US-016
+- Created RoleMiddleware: checks role against allowed list, returns 403 if unauthorized
+- Created ParkScopeMiddleware: checks park access (admin/main_manager bypass), static hasAccessToPark() helper
+- Registered as named middleware in bootstrap/app.php: 'role' and 'park.scope'
+- Created ParkFactory for test support
+- Added HasFactory to Park model
+- All 8 middleware unit tests pass
+- **Learnings for future iterations:**
+  - Laravel 12 uses bootstrap/app.php $middleware->alias() instead of Kernel.php for named middleware
+  - ParkFactory needed for any test involving parks; add to test suite early
+  - HasFactory must be on model for Factory to work
+---
+
+## 2026-03-07 - US-017
+- Created Admin/UserController: GET /api/admin/users (paginated, filter role/active), POST (create+temp password), PUT (update), DELETE (deactivate), POST /{id}/parks (sync)
+- Created Admin/EmployeeController: GET/POST/PUT/DELETE /api/admin/employees with show
+- Added EmployeeFactory + HasFactory to Employee model
+- Routes guarded by auth:sanctum + role:admin middleware
+- All mutations written to audit_logs with old/new values
+- 12 new tests pass, 36 total passing
+- Files changed: Admin/UserController.php, Admin/EmployeeController.php, EmployeeFactory.php, Employee.php, routes/api.php, tests/Feature/Admin/AdminUserTest.php
+- **Learnings for future iterations:**
+  - Admin controller subdirectory pattern: `app/Http/Controllers/Admin/`
+  - Route group: `Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(...)`
+  - Soft-delete for users = deactivate (active=false) + revoke tokens; don't call delete() on users
+  - AuditLog::create() pattern reused across all controllers for audit trail
+---
+
+## 2026-03-08 - US-018
+- Created ParkController with full CRUD (index, store, update, destroy)
+- Logo upload via POST /{id}/logo using Storage::disk('s3') with fake in tests
+- Settings endpoints: GET /{id}/settings (park + system_settings), PUT /{id}/settings (park field overrides)
+- Routes at /api/parks with role:admin,main_manager middleware
+- All mutations logged to audit_logs
+- 13 new tests pass, 49 total passing
+- Files changed: ParkController.php, routes/api.php, tests/Feature/Park/ParkTest.php
+- **Learnings for future iterations:**
+  - main_manager has implicit access to ALL parks (admin/main_manager bypass ParkScopeMiddleware)
+  - GD extension not installed on this PHP — use UploadedFile::fake()->create('name', size, mime) not ->image()
+  - Storage::fake('s3') works for testing S3 uploads without real S3 credentials
+  - Route middleware `role:admin,main_manager` allows both roles (comma-separated in RoleMiddleware)
+---
+
+## 2026-03-08 - US-019
+- Created UnitTypeController with full CRUD at /api/parks/{parkId}/unit-types
+- POST /api/unit-types/{id}/floor-plan: PDF upload to S3 (Storage::fake('s3') in tests)
+- POST /api/unit-types/{id}/features: sync replaces all features via delete+insert
+- GET /api/unit-types/{id}/availability: returns count of units with status='free'
+- Added HasFactory + UnitTypeFactory, UnitFactory for test support
+- Added HasFactory to Unit model; added unitTypes() HasMany to Park model
+- All 12 new tests pass, 61 total passing
+- Files changed: UnitTypeController.php, UnitType.php, Unit.php, Park.php, UnitTypeFactory.php, UnitFactory.php, routes/api.php, tests/Feature/UnitType/UnitTypeTest.php
+- **Learnings for future iterations:**
+  - Unit status enum values: 'free', 'reserved', 'rented', 'maintenance', 'inactive' (not 'available'/'occupied')
+- Contract status enum: 'draft','awaiting_signature','signed','active','terminated_by_customer','terminated_by_lfg','declined','expired'
+- Customer type enum: 'private','company'; status enum: 'new','tenant','not_renting','debtor','troublemaker','blacklisted'
+- Non-admin/main_manager roles need park_user pivot row for park access (ParkScopeMiddleware::hasAccessToPark)
+  - Feature sync pattern: delete all + insert batch (not upsert) — simpler and atomic
+  - UnitFactory needs both park_id and unit_type_id; use Park::factory() + UnitType::factory() as defaults
+---
+
+## 2026-03-08 - US-020
+- Created UnitController with CRUD at /api/parks/{parkId}/units and /api/units/{id}
+- Status transitions enforced: free→reserved→rented (requires active contract); rented→free (requires terminated contract)
+- POST /api/units/{id}/photos: multipart upload to S3 (Storage::fake('s3') in tests)
+- DELETE /api/units/{id}/photos/{photoId}: removes from S3 + DB
+- GET /api/units/{id}/history: returns past contracts with customer name
+- Added contracts() HasMany to Unit model
+- Added HasFactory to Customer and Contract models
+- Created CustomerFactory (type:'private', status:'new') and ContractFactory (status:'active')
+- Added routes for rental_manager role access (with park_user association required)
+- 19 new tests pass, 80 total passing
+- Files changed: UnitController.php, Unit.php, Customer.php, Contract.php, CustomerFactory.php, ContractFactory.php, routes/api.php, tests/Feature/Unit/UnitTest.php
+- **Learnings for future iterations:**
+  - Contract status enum: 'draft','awaiting_signature','signed','active','terminated_by_customer','terminated_by_lfg','declined','expired' (no plain 'terminated')
+  - Customer type enum: 'private','company' (not 'individual'); status enum: 'new','tenant','not_renting','debtor','troublemaker','blacklisted'
+  - Non-admin/main_manager roles need park_user association for park access (attach in test setUp)
+  - units.size_m2 has no default value — must be provided in create requests
+---
+
+## 2026-03-08 - US-021
+- Created DiscountRuleController: GET/POST/PUT/DELETE /api/parks/{parkId}/discount-rules
+- Created InsuranceOptionController: GET/POST/PUT/DELETE /api/parks/{parkId}/insurance-options
+- Added GET /api/unit-types/{id}/discount-rules and GET /api/unit-types/{id}/insurance-options (returns park-wide + unit-type-specific active records)
+- Added routes and imports to routes/api.php
+- Created tests: tests/Feature/Pricing/DiscountRuleTest.php, InsuranceOptionTest.php
+- All 14 new tests pass, 94 total passing
+- **Learnings for future iterations:**
+  - main_manager has implicit access to ALL parks (ParkScopeMiddleware) — don't test park isolation with main_manager role
+  - forUnitType query: filter by park_id AND (unit_type_id IS NULL OR unit_type_id = X) AND active = true
+  - New test directories (e.g. tests/Feature/Pricing/) work without additional config
+---
+
+## 2026-03-08 - US-022
+- Created CustomerController: GET/POST/PUT/DELETE /api/customers, document upload/list/delete, GDPR anonymize, blacklist add/remove, blacklist index
+- Added contracts() and applications() HasMany to Customer model
+- Added $table = 'blacklist' to Blacklist model (Eloquent pluralizes to 'blacklists' by default)
+- Added HasFactory + CustomerDocumentFactory for test support
+- Park filter uses applications.park_id (contracts have no direct park_id)
+- GDPR delete sets phone='DELETED' (column is non-nullable in DB)
+- 16 new tests pass, 110 total passing
+- Files changed: CustomerController.php, Customer.php, Blacklist.php, CustomerDocument.php, CustomerDocumentFactory.php, routes/api.php, tests/Feature/Customer/CustomerTest.php
+- **Learnings for future iterations:**
+  - `Blacklist` model requires `protected $table = 'blacklist'` — Eloquent auto-pluralizes to 'blacklists'
+  - customers table: `phone` column is NOT NULL with no default — always provide it in create requests
+  - Contracts table has no direct park_id; use applications (has park_id) for park-based customer filtering
+  - GET /api/customers/blacklist must be registered BEFORE GET /api/customers/{id} to avoid route conflicts
+---
+
+## 2026-03-08 - US-023
+- Created ApplicationController: GET/POST/PUT/DELETE /api/applications, status transitions, assign, credit-check stub, waiting-list, convert
+- Status transitions: new→in_progress→waiting→completed|declined (enforced via transition map)
+- Credit check: stub adapter stores fake PDF to S3, returns score/risk_level/checked_at
+- Waiting list: sets status→waiting, creates waiting_list record with FK to application
+- Convert: assigns free/reserved unit, creates draft contract, marks application completed, unit→reserved
+- Auto-acknowledgment email: creates SentEmail record with 'welcome' template (queued status)
+- ApplicationFactory with Park/Customer/UnitType factories as defaults
+- Added HasFactory + protected $table = 'waiting_list' to WaitingList model
+- 20 new tests pass, 130 total passing
+- Files: ApplicationController.php, Application.php (HasFactory), WaitingList.php ($table fix), ApplicationFactory.php, routes/api.php, tests/Feature/Application/ApplicationTest.php
+- **Learnings for future iterations:**
+  - `Application::create($data)` without explicit `status` needs `$application->refresh()` to get DB default value
+  - Eloquent serializes BelongsTo relations using snake_case of method name: `assignedTo()` → `assigned_to` key in JSON, which conflicts with the FK column `assigned_to`; don't eager load when returning the FK value
+  - `WaitingList` model needs `protected $table = 'waiting_list'` (Eloquent would auto-pluralize to `waiting_lists`)
+  - Status transition map stored as class constant — clean pattern for enforcing finite state machine
+---
+
+## 2026-03-08 - US-024
+- Created WaitingListController: GET/POST /api/parks/{parkId}/waiting-list, PUT/DELETE /api/waiting-list/{id}, POST /{id}/notify, POST /{id}/convert
+- Created NotifyWaitingListEntries job (ShouldQueue): dispatched when unit status changes to 'free', finds matching entries by park_id+unit_type_id, creates WaitingListNotification + SentEmail records
+- Added HasFactory + WaitingListFactory to WaitingList model
+- Updated UnitController.updateStatus to dispatch NotifyWaitingListEntries when newStatus === 'free'
+- List sorted by priority_score DESC, created_at ASC
+- 12 new tests pass, 142 total passing
+- Files changed: WaitingListController.php, NotifyWaitingListEntries.php, WaitingList.php (HasFactory), WaitingListFactory.php, UnitController.php (job dispatch), routes/api.php, tests/Feature/WaitingList/WaitingListTest.php
+- **Learnings for future iterations:**
+  - Queue::fake() in setUp() captures dispatched jobs; use Queue::assertPushed() with closure to check job properties
+  - Job class properties used in Queue::assertPushed() closure must be public (readonly works)
+  - Jobs directory must be created manually (app/Jobs/); no artisan scaffold needed
+  - notified_at is in WaitingList $fillable — update via $entry->update(['notified_at' => now()])
+---
+
+## 2026-03-08 - US-025
+- Created ContractController: generateFromApplication, index, show, update, sendForSignature, esignWebhook, activate, terminate, renew
+- POST /api/applications/{id}/contract: stubs PDF from document template, stores to S3, creates draft contract
+- POST /api/contracts/{id}/send-for-signature: e-sign stub, status→awaiting_signature
+- POST /api/webhooks/esign: signature webhook (public), stores signed PDF, status→signed, creates contract_signature record
+- POST /api/contracts/{id}/activate: status→active, unit→rented, creates deposit record (pending)
+- POST /api/contracts/{id}/terminate: validates termination_notice_date + notice_period_days, sets terminated_by_customer|terminated_by_lfg
+- POST /api/contracts/{id}/renew: creates new draft contract, links via contract_renewals, old→expired
+- 20 new tests pass, 162 total passing
+- Files changed: ContractController.php, routes/api.php, tests/Feature/Contract/ContractTest.php
+- **Learnings for future iterations:**
+  - Contracts have no direct park_id — get park_id from contract.unit.park_id for deposit creation
+  - Esign webhook is public (no auth) — register outside auth:sanctum middleware group
+  - notice_period_days validation: terminated_at (now) must be >= notice_date + notice_period_days
+  - Use notice_period_days=0 in tests to bypass notice period validation
+---
+
+## 2026-03-08 - US-026
+- Created DepositController: GET /api/deposits (paginated, filter park/status), GET /api/contracts/{id}/deposit, PUT /api/deposits/{id}/received, POST /api/deposits/{id}/return, POST /api/deposits/{id}/mollie-payout
+- Status transitions enforced: pending→received; received|held→returned|partially_returned (only if contract terminated); Mollie payout only if return_method=mollie_payout and no existing mollie_payment_id
+- Partial return when deduction_amount > 0: return_amount = deposit.amount - deduction_amount
+- Mollie payout stub: generates mollie-payout-{uniqid}, idempotent (rejects if mollie_payment_id already set)
+- Created DepositFactory with Contract/Customer/Park factories as defaults
+- Added HasFactory to Deposit model
+- Routes guarded by auth:sanctum + role:admin,main_manager,rental_manager,accountant
+- All mutations logged to audit_logs
+- 15 new tests pass, 177 total passing
+- Files changed: DepositController.php, Deposit.php (HasFactory), DepositFactory.php, routes/api.php, tests/Feature/Deposit/DepositTest.php
+- **Learnings for future iterations:**
+  - Deposit status enum: 'pending','received','held','returned','partially_returned','forfeited'
+  - Can only process return if contract.status in ['terminated_by_customer','terminated_by_lfg']
+  - Mollie payout idempotency: check mollie_payment_id before creating new payout
+  - DepositFactory needs explicit park_id — Contract factory creates its own unit/customer so park may differ; always create deposit with matching park_id from contract.unit.park_id in real usage
+---
+
+## 2026-03-08 - US-027
+- Created PdfService in `app/Services/PdfService.php` using dompdf/dompdf v3.x
+- generateContract(contract): loads contract+customer+unit+park, renders template or fallback HTML, stores to S3, updates signed_pdf_path
+- generateInvoice(invoice): loads invoice+customer+park+items, renders with line item table, stores to S3, updates pdf_path
+- generateDunningLetter(dunning_record): renders dunning letter for level 1-3, stores to S3, updates template_used
+- generateDepositReturn(deposit): renders deposit return doc, stores to S3, returns path
+- All methods use findTemplate() to prefer park-specific templates over global (park_id IS NULL)
+- Added HasFactory to Invoice and DunningRecord models
+- Created InvoiceFactory and DunningRecordFactory
+- 9 new tests pass, 186 total passing
+- Files changed: PdfService.php, Invoice.php, DunningRecord.php, InvoiceFactory.php, DunningRecordFactory.php, tests/Feature/Pdf/PdfServiceTest.php, composer.json, composer.lock
+- **Learnings for future iterations:**
+  - dompdf v3.x: use `new Options()` + `set()` then pass to `new Dompdf($options)` constructor
+  - `assertStringContainsString()` not `assertStringContains()` in PHPUnit
+  - PdfService is a plain class (not bound in container) — instantiate directly or inject via constructor
+  - Template priority: `orderByRaw('park_id IS NULL ASC')` returns park-specific before global
+---
+
+## 2026-03-08 - US-028
+- Created InvoiceController: GET/POST /api/invoices, POST /api/invoices/generate-monthly, GET /{id}/pdf, POST /{id}/send, POST /{id}/cancel, GET /api/invoices/datev-export
+- Created GenerateMonthlyInvoices job (ShouldQueue): iterates active contracts, applies discount rules, creates draft invoices with rent/discount/insurance line items
+- Added migration to extend invoice_items.item_type enum with 'credit_note' value
+- Invoice number format: {PARK_CODE}-{YEAR}-{SEQ:0004} — code derived from first 4 alpha chars of park name
+- DATEV export returns EXTF CSV format with header rows + one line per invoice
+- Cancel: sets status=cancelled + creates credit_note InvoiceItem (negative total)
+- Send: generates PDF via PdfService if missing, creates SentEmail record (queued), sets status=sent
+- 13 new tests pass, 199 total passing
+- Files changed: InvoiceController.php, GenerateMonthlyInvoices.php, routes/api.php, 2026_03_08_000001_add_credit_note_to_invoice_items_type.php, tests/Feature/Invoice/InvoiceTest.php
+- **Learnings for future iterations:**
+  - DB::transaction closure variables need explicit `use ($var)` — PHP doesn't capture outer scope automatically
+  - DATEV EXTF format: first 2 rows are headers (EXTF identifier + column names), data rows follow
+  - ALTER TABLE to modify ENUM: `DB::statement("ALTER TABLE t MODIFY COLUMN col ENUM(...)")` — works in MariaDB
+  - Invoice number uniqueness: query `LIKE 'PREFIX-%'` then parse + increment sequence
+---
+
+## 2026-03-08 - US-029
+- Created PaymentController: POST /api/invoices/{id}/payment-link, POST /api/webhooks/mollie, POST /api/payments/{id}/refund, GET /api/payments
+- Created RetryPayment job (ShouldQueue): retries failed Mollie payments up to payment_retry_max, dispatched with 24h delay
+- Added migration to add retry_count column to payments table
+- Added HasFactory to Payment model, created PaymentFactory
+- Payment link idempotency: returns existing pending payment if already created
+- Webhook idempotency: skips already-processed payments (paid/refunded/cancelled)
+- Retry limit: no job dispatched when retry_count >= payment_retry_max (from system_settings)
+- Invoice status updated to 'paid' when total paid payments >= invoice total_amount
+- 13 new tests pass, 212 total passing
+- Files changed: PaymentController.php, RetryPayment.php, Payment.php (HasFactory), PaymentFactory.php, 2026_03_08_000002_add_retry_count_to_payments_table.php, routes/api.php, tests/Feature/Payment/PaymentTest.php
+- **Learnings for future iterations:**
+  - Mollie webhook is public (no auth) — register outside auth:sanctum middleware group
+  - Idempotency on webhooks: check payment status before processing (skip if already paid/refunded/cancelled)
+  - RetryPayment job delay: use ->delay(now()->addHours(24)) in dispatch call
+  - Payment factory needs explicit status field since 'pending' is the DB default but factory should be explicit
+---
+
+## 2026-03-08 - US-030
+- Created migration: add `dunning_paused_until` timestamp to customers table
+- Created `ProcessDunning` artisan command: daily scheduler, finds overdue invoices, escalates dunning level based on system_settings delays (dunning_delay_1/2/3)
+- Registered command in routes/console.php via `Schedule::command(ProcessDunning::class)->daily()`
+- Created `DunningController`: GET /api/debtors (filter by park_id), POST /{id}/pause (30 days), POST /{id}/escalate (manual), POST /{id}/resolve (mark paid, reset customer)
+- Added `invoices()` HasMany to Customer model + `dunning_paused_until` to fillable/casts
+- Fee amounts hardcoded by level: 1=5.00, 2=10.00, 3=30.00 EUR
+- Routes guarded by role:admin,main_manager,accountant
+- 13 new tests pass, 225 total passing
+- Files changed: ProcessDunning.php, DunningController.php, Customer.php, 2026_03_08_000003_add_dunning_pause_to_customers.php, routes/api.php, routes/console.php, tests/Feature/Dunning/DunningTest.php
+- **Learnings for future iterations:**
+  - Carbon `now()->diffInDays($pastDate)` returns NEGATIVE — always use `Carbon::parse($past)->diffInDays(now())` for "days ago"
+  - Artisan commands auto-discovered from app/Console/Commands/ in Laravel 12 (no explicit registration needed)
+  - Schedule registration in routes/console.php via `Schedule::command(ClassName::class)->daily()`
+  - `Collection::min('due_date')` returns Carbon instance from date-casted field; parse with Carbon::parse() for safety
+---
+
+## 2026-03-08 - US-031
+- Created DamageReportController: GET/POST/PUT/DELETE /api/damage-reports, status transitions, photo upload, assign-vendor, generate invoice
+- Status transitions enforced: reported→in_assessment→repair_ordered→in_repair→resolved→closed
+- Photos uploaded to S3 via Storage::disk('s3')
+- Assign vendor: updates assigned_vendor_id and logs SentEmail notification to vendor
+- Generate invoice: creates draft Invoice + InvoiceItem (item_type=damage) from contract's customer/park
+- Added HasFactory to DamageReport and Vendor models; created DamageReportFactory and VendorFactory
+- Routes guarded by role:admin,main_manager,rental_manager,park_worker
+- 14 new tests pass, 239 total passing
+- Files changed: DamageReportController.php, DamageReport.php (HasFactory), Vendor.php (HasFactory), DamageReportFactory.php, VendorFactory.php, routes/api.php, tests/Feature/DamageReport/DamageReportTest.php
+- **Learnings for future iterations:**
+  - Park filtering for damage reports: use whereHas('unit', fn($q)=>$q->where('park_id', ...)) since DamageReport has no direct park_id
+  - resolved_at should be set automatically when status transitions to 'resolved'
+  - Vendor model needs HasFactory for test support
+---
+
+## 2026-03-08 - US-032
+- Created ElectricityMeterController: GET/POST /api/units/{unitId}/meters, PUT/DELETE /api/meters/{id}
+- POST /api/meters/{id}/readings: records reading with consumption computed from previous reading, optional S3 photo
+- GET /api/meters/{id}/readings: lists readings with stored consumption
+- POST /api/meters/{id}/readings/{readingId}/bill: finds applicable pricing, creates InvoiceItem (electricity), adds to existing draft invoice or creates new one
+- GET/POST /api/parks/{parkId}/electricity-pricing: list/create pricing periods (new period closes previous open period)
+- Added HasFactory to ElectricityMeter, ElectricityReading, ElectricityPricing models
+- Created ElectricityMeterFactory, ElectricityReadingFactory, ElectricityPricingFactory
+- 14 new tests pass, 253 total passing
+- Files changed: ElectricityMeterController.php, ElectricityMeter.php, ElectricityReading.php, ElectricityPricing.php, 3 factories, routes/api.php, tests/Feature/Electricity/ElectricityTest.php
+- **Learnings for future iterations:**
+  - `ElectricityPricing` model needs `protected $table = 'electricity_pricing'` — Eloquent auto-pluralizes to `electricity_pricings`
+  - Consumption = current_value - previous_value (ordered by reading_date DESC, id DESC for latest)
+  - Billing: find pricing where valid_from <= reading_date AND (valid_to IS NULL OR valid_to >= reading_date)
+---
+
+## 2026-03-08 - US-033
+- Created VendorController: GET/POST/PUT/DELETE /api/vendors (filter by park/active)
+- GET/POST/PUT /api/vendors/{id}/invoices, POST /{id}/invoices/{invoiceId}/pay
+- GET /api/vendors/{id}/damage-reports: lists damage reports assigned to vendor
+- Pay endpoint: idempotent (rejects if already paid_at is set)
+- Added HasFactory to VendorInvoice model; created VendorInvoiceFactory
+- Routes guarded by role:admin,main_manager,rental_manager
+- All mutations logged to audit_logs
+- 15 new tests pass, 268 total passing
+- Files changed: VendorController.php, VendorInvoice.php (HasFactory), VendorInvoiceFactory.php, routes/api.php, tests/Feature/Vendor/VendorTest.php
+- **Learnings for future iterations:**
+  - VendorInvoice has no status enum — paid state tracked via `paid_at` nullable timestamp
+  - vendor_invoices.amount is cast as decimal:2 — JSON returns "500.00" string (assert with string)
+  - Park filter on vendors uses direct `park_id` column (not relation join needed)
+---
+
+## 2026-03-08 - US-034
+- Created TaskController with full CRUD at /api/tasks
+- Status transitions enforced: todo→in_progress→done (sets completed_at); todo/in_progress→cancelled
+- POST /api/tasks/{id}/assign: changes assigned_to and sends in-app Notification
+- GET /api/tasks/dashboard: Kanban structure (todo/in_progress groups); park_worker only sees own tasks
+- GET /api/tasks/calendar: tasks with due_date, filterable by park/from/to
+- park_worker role restricted to own tasks in index and dashboard
+- Added HasFactory to Task model + TaskFactory
+- 14 new tests pass, 282 total passing
+- Files changed: TaskController.php, Task.php, TaskFactory.php, routes/api.php, tests/Feature/Task/TaskTest.php
+- **Learnings for future iterations:**
+  - dashboard and calendar routes must be declared BEFORE /{id} routes in the route group to avoid route conflicts
+  - park_worker role filtering is done in controller (not middleware) since filter depends on role value
+  - Notification model is in App\Models (custom, not Laravel's built-in) — use directly without namespace conflict
+---
+
+## 2026-03-08 - US-035
+- Created MailController: GET/POST/PUT/DELETE /api/mail-templates, POST /api/mail/preview, POST /api/mail/send, POST /api/mail/mass-send, POST /api/mail/schedule, GET /api/mail/sent
+- Created SendMailJob (ShouldQueue): marks SentEmail as sent (stub — real SMTP in production)
+- Added HasFactory + MailTemplateFactory and SentEmailFactory
+- Preview: substitutes {variable} placeholders in subject and body_html
+- Send: merges customer variables (customer_name, email, phone, address) with extra vars
+- Mass-send: filters customers by park/status/contract_status, creates queued SentEmail records, dispatches SendMailJob per recipient
+- Schedule: like mass-send but dispatches with delay($sendAt)
+- Routes guarded by role:admin,main_manager,office_worker
+- 17 new tests pass, 299 total passing
+- Files changed: MailController.php, SendMailJob.php, MailTemplate.php (HasFactory), SentEmail.php (HasFactory), MailTemplateFactory.php, SentEmailFactory.php, routes/api.php, tests/Feature/Mail/MailTest.php
+- **Learnings for future iterations:**
+  - Variable substitution: simple str_replace on {key} placeholders — no Blade/Twig needed
+  - SentEmailFactory needs explicit `sent_at` — column is nullable but factory should set it for status=sent
+  - Queue::assertPushed count is cumulative across all dispatches in the test
+---
+
+## 2026-03-08 - US-036
+- Created DocumentTemplateController: GET/POST/PUT /api/document-templates, POST /api/document-templates/{id}/clone
+- Created SystemSettingController: GET /api/system-settings, GET /api/system-settings/{key}, PUT /api/system-settings (bulk update)
+- Clone: increments version (max existing + 1), sets active=false, appends (vN) to name
+- System settings update: bulk array input, skips unknown keys silently, logs each change to audit_logs
+- Routes: document-templates guarded by role:admin,main_manager; system-settings by role:admin
+- 19 new tests pass, 318 total passing
+- Files changed: DocumentTemplateController.php, SystemSettingController.php, routes/api.php, tests/Feature/Settings/DocumentTemplateTest.php, tests/Feature/Settings/SystemSettingTest.php
+- **Learnings for future iterations:**
+  - System settings PUT uses bulk array format: `{settings: [{key, value}, ...]}`
+  - Clone pattern: max(version) + 1 scoped to document_type (and park_id if applicable)
+  - DocumentTemplate has no soft deletes — omit DELETE endpoint per PRD
+---
+
+## 2026-03-08 - US-037
+- Created ReferenceItemController: GET/POST/PUT/DELETE /api/reference-items
+- GET open to all authenticated roles; POST/PUT/DELETE restricted to admin
+- DELETE is soft-deactivate (sets active=false), not hard delete
+- Created LlmAccessCodeController: GET/POST/PUT/DELETE /api/parks/{parkId}/access-codes + POST sync
+- Sync endpoint finds active codes with valid_from <= today and (valid_to IS NULL OR valid_to >= today)
+- Sync is a stub adapter (returns codes as JSON; real implementation would call lock system REST API)
+- All mutations logged to audit_logs
+- 14 new tests pass, 332 total passing
+- Files changed: ReferenceItemController.php, LlmAccessCodeController.php, routes/api.php, tests/Feature/Reference/ReferenceItemTest.php
+- **Learnings for future iterations:**
+  - LlmAccessCode uses direct delete (no soft deletes on access codes table)
+  - sync route POST /parks/{parkId}/access-codes/sync must be declared BEFORE PUT/DELETE /{id} to avoid conflicts (it is in a separate group so no conflict here)
+  - ReferenceItem deactivate = set active=false (no soft deletes column in schema)
+---
+
+## 2026-03-08 - US-038
+- Created NotificationController: GET /api/notifications (paginated, read/unread filter), POST /{id}/read, POST /read-all, GET /unread-count
+- Created SearchController: GET /api/search?q=&park_id= — searches customers (name/email), units (number), applications (customer name), contracts (id), invoices (number); top 5 per category
+- Park access validated in search via ParkScopeMiddleware::hasAccessToPark helper
+- unread-count and read-all routes registered BEFORE /{id}/read to avoid route conflicts
+- 13 new tests pass, 345 total passing
+- Files changed: NotificationController.php, SearchController.php, routes/api.php, tests/Feature/Notification/NotificationTest.php
+- **Learnings for future iterations:**
+  - Route ordering matters: /unread-count and /read-all must come before /{id}/read in prefix group
+  - Contracts have no direct park_id — filter via whereHas('unit', fn($q)=>$q->where('park_id', ...))
+  - ParkScopeMiddleware::hasAccessToPark() is a public static helper reusable in controllers for manual park access checks
+---
+
+## 2026-03-08 - US-039
+- Created DashboardController: GET /api/dashboard/kpis (cached 30s), GET /api/dashboard/mahnstuffe, GET /api/dashboard/revenue
+- Created ReportController: GET /api/reports/applications|customers|units|finance (json|xlsx), GET /api/reports/audit (admin only)
+- Installed phpoffice/phpspreadsheet ^5.5 for xlsx export (with --ignore-platform-req=ext-gd since GD not installed)
+- Used Coordinate::stringFromColumnIndex() for cell addressing (setCellValueByColumnAndRow removed in v2+)
+- DunningRecord has no park_id — filter via whereHas('invoice', fn => where('park_id', ...))
+- 20 new tests pass, 365 total passing
+- Files changed: DashboardController.php, ReportController.php, routes/api.php, tests/Feature/Dashboard/DashboardTest.php, composer.json, composer.lock
+- **Learnings for future iterations:**
+  - phpspreadsheet v5: use Coordinate::stringFromColumnIndex($col+1) + setCellValue($col.$row, $val) — setCellValueByColumnAndRow() is gone
+  - Install phpspreadsheet with --ignore-platform-req=ext-gd (GD not installed on this PHP)
+  - DunningRecord joins park via invoice.park_id (no direct park_id column)
+  - Cache::remember($key, 30, fn) — second arg is seconds (TTL)
+---
+
+## 2026-03-08 - US-040
+- Created RevenueTargetController: GET/POST /api/parks/{parkId}/revenue-targets, PUT /api/revenue-targets/{id}, GET /actual
+- GET index: lists monthly targets for a year (defaults to current year)
+- POST store: upsert (updateOrCreate) by park_id+year+month combination
+- PUT update: updates target_amount only
+- GET actual: sums paid invoices for park/year/month from invoices.created_at
+- Routes guarded by role:admin,main_manager,accountant
+- 13 new tests pass, 378 total passing
+- Files changed: RevenueTargetController.php, routes/api.php, tests/Feature/RevenueTarget/RevenueTargetTest.php
+- **Learnings for future iterations:**
+  - updateOrCreate pattern for upsert on composite natural key (park_id+year+month)
+  - actual revenue: filter invoices by status='paid' + whereYear/whereMonth on created_at
+---
+
+## 2026-03-08 - US-041
+- Created AuditLogController: GET /api/audit-logs (paginated), GET /{id}, GET /export (CSV)
+- Filters: user_id, model_type, model_id, from/to date range
+- CSV export: header row + one line per audit entry (no external library needed)
+- Routes guarded by role:admin (admin-only per spec)
+- 11 new tests pass, 389 total passing
+- Files changed: AuditLogController.php, routes/api.php, tests/Feature/AuditLog/AuditLogTest.php
+- **Learnings for future iterations:**
+  - AuditLog `created_at` is NOT in $fillable — use `forceFill(['created_at' => ...])->save()` in tests to set explicit timestamps
+  - export route GET /audit-logs/export must be declared BEFORE GET /audit-logs/{id} to avoid route conflict
+---
+
+## 2026-03-08 - US-042
+- Initialized Vue 3 + Vite + TypeScript + Pinia + Vue Router 4 project in /frontend
+- Axios instance: base URL from VITE_API_BASE_URL, auto-attach Bearer token from localStorage, 401→logout redirect
+- Auth Pinia store: login/logout, user/role/parks computed, token persisted in localStorage
+- Router: beforeEach guard with `roles` meta field, redirects to /login or /403
+- AppLayout.vue: sidebar + top bar wrapper with RouterView
+- AppSidebar.vue: all 17 menu items with role-based visibility
+- AppTopBar.vue: park selector dropdown, notification bell with unread count badge, user avatar/name, logout button
+- 17 stub views created for all routes
+- vue-tsc --noEmit typecheck passes
+- Files: frontend/src/{main.ts, App.vue, api/axios.ts, stores/auth.ts, stores/notifications.ts, router/index.ts, layouts/AppLayout.vue, components/{AppSidebar,AppTopBar}.vue, views/...}
+- **Learnings for future iterations:**
+  - Frontend lives in /frontend (Vite + Vue 3 + TS)
+  - Typecheck: `npx vue-tsc --noEmit` (no "type-check" npm script by default in Vite scaffold)
+  - useAuthStore() can be called inside axios interceptors (after pinia is created in main.ts)
+  - Park selector in TopBar uses auth.parks — populated after login/fetchUser
+---
+
+## 2026-03-08 - US-043
+- Created 9 shared UI components in frontend/src/components/
+- AppButton: variants (primary/secondary/danger/ghost), sizes (sm/md/lg), loading spinner
+- StatusBadge: maps status string to color (green/yellow/red/gray sets)
+- AppTable: slot-based columns, sortable headers, row-click event, empty state slot
+- AppModal: title + default + footer slots, backdrop close, v-model for open state
+- AppPagination: prev/next/page buttons with ellipsis, emits page-change
+- FormInput, FormSelect, FormDatePicker, FormTextarea: label, error, v-model, required marker
+- All typed with TypeScript props interfaces
+- vue-tsc --noEmit typecheck passes
+- **Learnings for future iterations:**
+  - AppTable uses Record<string, unknown> for row type (generic enough for all APIs)
+  - AppModal uses Teleport to="body" to escape stacking context issues
+  - FormSelect emits string value from HTMLSelectElement.value (convert to number when needed in parent)
+---
+
+## 2026-03-08 - US-044
+- Updated LoginView: handles requires_2fa → redirect to /login/2fa with temp_token query param
+- Created TwoFactorView: 6-digit code input, POST /auth/2fa/verify with temp_token, sets auth token on success
+- Created PasswordResetView: email field → POST /auth/forgot-password, success message on submit
+- Created PasswordResetConfirmView: email+password+confirm fields → POST /auth/reset-password with token from URL param
+- Added 3 new public routes to router: /login/2fa, /password-reset, /password-reset/:token
+- vue-tsc --noEmit typecheck passes
+- Files changed: LoginView.vue, TwoFactorView.vue, PasswordResetView.vue, PasswordResetConfirmView.vue, router/index.ts
+- **Learnings for future iterations:**
+  - TwoFactorView receives temp_token via route query param (set by LoginView on requires_2fa response)
+  - auth.token is a ref — directly assignable from outside the store (e.g. in 2FA view)
+---
+
+## 2026-03-08 - US-045
+- Created frontend/src/api/dashboard.ts with typed fetch functions for all dashboard data
+- Rewrote DashboardView.vue with 12 KPI cards, Mahnstuffe table, Umsatz table, Neue Facturas table, mini-Kanban (3 cols), 14-day calendar widget
+- Park selector in header filters all widgets via watch()
+- Loading skeleton grid shown during fetch (shimmer animation)
+- All data fetched in parallel via Promise.allSettled (graceful degradation on API errors)
+- vue-tsc --noEmit typecheck passes
+- Files changed: DashboardView.vue, api/dashboard.ts
+- **Learnings for future iterations:**
+  - Promise.allSettled for dashboard: each widget fails independently without breaking others
+  - Tasks dashboard API returns {todo: [], in_progress: [], done: []} — not a standard paginated response
+  - Calendar tasks are fetched from /tasks/calendar with from/to date params
+---
+
+## 2026-03-08 - US-046
+- Created frontend/src/api/applications.ts with fetchApplications, createApplication, searchCustomers
+- Created frontend/src/api/parks.ts with fetchParks, fetchUnitTypes, fetchUsers
+- Created ApplicationsView.vue: AppTable, AppPagination, filter bar (park/status/assigned_to/date range/search), CreateApplicationModal
+- CreateApplicationModal: customer live search with dropdown, park+unit type cascading selects, source select, date, notes
+- Routes to /applications/{id} on row click
+- vue-tsc --noEmit typecheck passes
+- Files changed: ApplicationsView.vue, api/applications.ts, api/parks.ts
+- **Learnings for future iterations:**
+  - Customer live search: debounced 300ms, results shown in dropdown, selection stored as customer_id
+  - Unit types depend on park selection (cascade: watch park_id, fetch /parks/{id}/unit-types)
+  - AppTable row type: cast rows to Record<string, unknown>[] for generic component
+---
+
+## 2026-03-08 - US-047
+- Created ApplicationDetailView.vue: status stepper, customer card, unit request card, actions sidebar, credit check, documents, activity timeline
+- Added route /applications/:id (ApplicationDetail)
+- Actions: assign (modal with user select), status change buttons per TRANSITIONS map, credit check, waiting list, convert to contract (modal with unit select)
+- Document upload via file input + multipart FormData to /customers/{id}/documents
+- Activity timeline from /audit-logs?model_type=Application&model_id=X
+- vue-tsc --noEmit typecheck passes
+- Files changed: ApplicationDetailView.vue, router/index.ts
+---
+
+## 2026-03-08 - US-048
+- Created frontend/src/api/waitingList.ts with CRUD + notify/convert functions
+- Created WaitingListView.vue: table with position/customer/unit type/priority score (inline)/added/notified/actions
+- Filter by park + unit type (cascading); Add modal with customer search + park/unit type cascade
+- Notify/Convert/Remove per row actions
+- Priority score: inline number input saves on blur via PUT /api/waiting-list/{id}
+- Added /waiting-list route to router
+- vue-tsc --noEmit typecheck passes
+---
+
+## 2026-03-08 - US-049
+- Created frontend/src/api/customers.ts with fetchCustomers, createCustomer, exportCustomers
+- Created CustomersView.vue: AppTable, filters (park/status/type/search), export xlsx, CreateCustomerModal with type toggle (private/company), address fields, GDPR checkbox
+- Added /customers and /customers/:id routes to router; created CustomerDetailView.vue stub
+- vue-tsc --noEmit typecheck passes
+---
+
+## 2026-03-08 - US-050
+- Created CustomerDetailView.vue: header with name/type/status, tabs (info/contracts/invoices/applications/documents/activity)
+- Personal info: editable form grid, save button, GDPR consent timestamp
+- Each tab loads data from respective APIs using Promise.allSettled
+- Actions: Add/Remove blacklist (modal + reason), GDPR Delete (admin only, modal confirm)
+- Document upload/delete
+- Activity timeline from audit-logs
+- vue-tsc --noEmit typecheck passes
+---
+
+## 2026-03-09 - US-051
+- Created BlacklistView.vue: table with customer/reason/added by/added at/removed at/status, active-only toggle, remove modal with reason, add modal with customer search
+- Added /customers/blacklist route BEFORE /customers/:id in router
+- vue-tsc --noEmit typecheck passes
+---
+
+## 2026-03-08 - US-054
+- Created `frontend/src/api/contracts.ts` with fetchContracts, exportContracts, Contract/ContractFilters interfaces
+- Replaced stub ContractsView.vue with full implementation: filters (park, status, date range, search), AppTable with typed slots for customer/unit/park/rent/status, export xlsx, pagination
+- Added `contracts/:id` route to router (placeholder pointing to ContractsView until detail view is built)
+- **Learnings for future iterations:**
+  - Contract date range filter uses start_date_from / start_date_to params matching backend convention
+  - Export pattern same as customers: blob download with URL.createObjectURL
+---
+
+## 2026-03-08 - US-055
+- Created full ContractDetailView.vue with: header+status stepper, Send for Signature/Activate/Renew/Terminate/Return Deposit actions, Contract info card, Signatures card, Deposit card, Invoices tab
+- Expanded `frontend/src/api/contracts.ts` with ContractDetail/Deposit/Invoice interfaces and API functions for all lifecycle actions
+- Added `contracts/:id` route pointing to ContractDetailView
+- **Learnings for future iterations:**
+  - `fetchContractDeposit` wrapped in try/catch so it doesn't fail if no deposit yet (returns 404)
+  - Stepper uses STEPPER constant (4 core states), terminal states (terminated/expired/declined) show beyond last step
+  - FormSelect `options` prop is `{ value: string|number; label: string }[]`
+---
+
+## 2026-03-08 - US-056
+- Created `frontend/src/components/DepositReturnModal.vue`: deduction amount input, computed return amount, return method select, IBAN field for bank_transfer, Mollie note for mollie_payout
+- Updated ContractDetailView to use DepositReturnModal instead of simple AppModal
+- **Learnings for future iterations:**
+  - DepositReturnModal emits `done` event after successful API call — parent calls loadAll() to refresh
+  - The `returnDeposit` API sends: deduction_amount, deduction_reason, return_method
+---
+
+## 2026-03-08 - US-057
+- Created `frontend/src/api/invoices.ts` with full type definitions and API calls (fetchInvoices, fetchInvoice, createInvoice, sendInvoice, cancelInvoice, createPaymentLink, datevExport, getInvoicePdfUrl, searchCustomers)
+- Wrote InvoicesView.vue: filters (park/status/date range), DATEV export modal, create invoice modal with dynamic line items and customer autocomplete
+- Wrote InvoiceDetailView.vue: info cards, line items table, Download PDF/Send Email/Payment Link/Cancel actions, payment link copy modal
+- Added invoices/:id route to router
+- **Learnings for future iterations:**
+  - DATEV export route is `GET /invoices/datev-export` with `from`, `to`, optional `park_id` params — must be declared BEFORE `/{id}` in backend routes (already handled)
+  - PDF opens in new tab via window.open() — URL constructed from axios baseURL + /api/invoices/{id}/pdf
+---
+
+## 2026-03-08 - US-058
+- Rewrote DunningView.vue with: summary metrics grid, filter bar (park/dunning level), debtors table with Pause/Escalate/Resolve inline action buttons, confirmation modals for each action
+- API calls go directly to `/debtors` endpoint with `park_id` param; dunning_level filter is client-side
+- **Learnings for future iterations:**
+  - `/debtors` returns a flat array (not paginated) — no pagination needed
+  - `dunning_paused_until` is on the `customer` sub-object, not the top-level row
+  - Level badge colors: 0=gray, 1=yellow, 2=orange, 3=red
+---
+
+## 2026-03-08 - US-059
+- Created PaymentsView.vue with filters (park/status/method/date range), table with refund action button per paid payment, refund confirmation modal
+- Rewrote VendorsView.vue with vendor list table, vendor detail modal showing info + vendor invoices list with Mark Paid action, create vendor modal
+- Added `payments` route to router
+- **Learnings for future iterations:**
+  - `GET /vendors/{id}/invoices` may return array or paginated — handled both with fallback
+  - `POST /payments/{id}/refund` is the refund endpoint
+  - Vendor invoices use `POST /vendors/{vendorId}/invoices/{invoiceId}/pay` to mark paid
+---
+
+## 2026-03-08 - US-060
+- Rewrote DamageReportsView.vue: filters (park/status), table with inline columns, create modal (unit_id input + description + estimated cost)
+- Created DamageReportDetailView.vue: info card, photo gallery, status transition buttons (based on TRANSITIONS map), assign vendor modal, generate invoice confirm modal
+- Added `damage-reports/:id` route
+- **Learnings for future iterations:**
+  - Backend has no `GET /damage-reports/{id}` — loads via index with per_page=1000 and find() as fallback (or query param approach)
+  - Status transitions: reported→in_assessment→repair_ordered→in_repair→resolved→closed
+  - Invoice generation: `POST /damage-reports/{id}/invoice`
+  - Assign vendor: `POST /damage-reports/{id}/assign-vendor` with `{ vendor_id }`
+---
+
+## 2026-03-08 - US-061
+- Rewrote TasksView.vue with native HTML5 drag-and-drop Kanban board (3 columns: Todo/In Progress/Done)
+- Task cards: type badge, priority colored dot, assignee initials avatar, due date (red if overdue), drag-to-move → PUT /tasks/{id}/status
+- Filter bar: assignee, type, priority (admin sees all users; park_worker sees own tasks via backend filter)
+- Create task modal with park/type/priority/assignee/due_date/description fields
+- Task detail modal on card click
+- **Learnings for future iterations:**
+  - Native drag-and-drop: card has `draggable="true"` + `@dragstart`, column has `@dragover.prevent` + `@drop`
+  - Backend enforces park_worker sees only own tasks — frontend doesn't need to filter for this role
+  - `PUT /tasks/{id}/status` with `{ status }` updates task status
+---
+
+## 2026-03-08 - US-062
+- Rewrote ParksView.vue with: basic info form (name/address/city/zip/country/phone/email), bank details (IBAN/BIC/owner), branding (logo upload + color picker), LLM access codes table with sync and add/delete
+- Logo upload uses multipart/form-data POST /parks/{id}/logo
+- LLM codes: GET /parks/{id}/access-codes, POST to add, DELETE to remove, POST .../sync to sync
+- **Learnings for future iterations:**
+  - LLM codes endpoint returns plain array (not paginated)
+  - Color picker uses native HTML `<input type="color">` — simple but functional
+---
+
+## 2026-03-08 - US-063
+- Created UnitTypesView.vue: unit type cards grid with edit/delete, create/edit modal with features multi-select, floor plan upload (POST /unit-types/{id}/floor-plan), insurance options modal (list/add/toggle)
+- Added `unit-types` route to router and sidebar entry
+- **Learnings for future iterations:**
+  - Features sync: POST /unit-types/{id}/features with { features: string[] } - replaces all features
+  - Insurance options endpoint: GET /parks/{parkId}/insurance-options (may need unit_type_id filter)
+  - Floor plan upload is multipart form at POST /unit-types/{id}/floor-plan with field name 'floor_plan'
+---
+
+## 2026-03-08 - US-064
+- Created DiscountRulesView.vue: table with active toggle, create/edit modal (name/type/value/from-month/to-month)
+- Created RevenueTargetsView.vue: 4-column month grid, inline target editing (save on blur), actual vs target %, color-coded progress bar
+- Added discount-rules and revenue-targets routes + sidebar entries
+- **Learnings for future iterations:**
+  - Revenue targets save via POST /parks/{id}/revenue-targets (upsert via updateOrCreate) — no separate PUT needed per cell
+  - Actuals fetched via GET /parks/{id}/revenue-targets/{year}/{month}/actual — run in parallel with Promise.allSettled
+---
+
+## 2026-03-08 - US-065
+- Rewrote ElectricityView.vue: pricing history table (price/kwh, valid_from, valid_to with 'Current' badge), add pricing modal, units & meters overview table linking to unit detail electricity tab
+- Park selector at top for multi-park access
+- **Learnings for future iterations:**
+  - POST /parks/{id}/electricity-pricing auto-closes previous open period (sets valid_to=today)
+  - Units electricity loaded via GET /parks/{id}/units + GET /units/{id}/meters in parallel
+---
+
+## 2026-03-09 - US-067
+- MailTemplatesView.vue was already created (untracked file) — wired it up to router and sidebar
+- Fixed two typecheck errors: removed unused `computed` import, replaced `replaceAll` with `replace(/pattern/g)` for ES2020 compat
+- TipTap (@tiptap/vue-3, @tiptap/starter-kit) already in package.json
+- Route: /mail-templates, roles: admin/main_manager/office_worker
+- **Learnings for future iterations:**
+  - `replaceAll` requires ES2021+ lib — use `replace(new RegExp(..., 'g'))` or check tsconfig lib setting
+  - New views may already exist as untracked files — check git status before creating
+---
+
+## 2026-03-09 - US-068
+- Implemented mass mailing compose page at /mail/compose with recipient filters (park multi-select chips, customer status multi-select chips, contract status select)
+- Live estimated recipient count via POST /api/mail/recipient-count (updates on filter change)
+- Template select + subject override field
+- Send Now button: confirmation modal with recipient count, calls POST /api/mail/mass-send
+- Schedule button: datetime-local picker modal, calls POST /api/mail/schedule
+- Implemented sent mail log at /mail/sent: table with recipient, subject, template, sent_at, status badge (sent/failed/bounced)
+- Filter by date range and status; pagination support
+- MailView.vue updated to layout with Compose/Sent tabs + RouterView
+- Router updated: /mail now has children compose and sent with redirect from /mail → /mail/compose
+- Files: MailView.vue, MailComposeView.vue (new), MailSentView.vue (new), router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Nested child routes under /mail require MailView to contain <RouterView /> and the parent route drops the `name` (children have names instead)
+  - Chip-style multi-select pattern used for park/status filters (togglePark/toggleStatus with array.indexOf)
+  - `watch([...], fn, { deep: true })` needed for array refs to trigger on item push/splice
+---
+
+## 2026-03-09 - US-069
+- Created DocumentTemplatesView.vue: list grouped by template type with version badge, active toggle, edit/clone/preview actions
+- Created DocumentTemplateEditView.vue: two-column layout with meta/park settings panel + variable reference sidebar on left, HTML textarea editor on right; preview opens PDF blob in new tab; save/toast feedback
+- Added routes: /settings/document-templates (DocumentTemplates) and /settings/document-templates/:id/edit (DocumentTemplateEdit)
+- Files changed: frontend/src/views/DocumentTemplatesView.vue, frontend/src/views/DocumentTemplateEditView.vue, frontend/src/router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Document templates differ from mail templates: PDF-based, grouped by type, have version numbers
+  - Preview opens a Blob URL in new tab (responseType: 'blob' on axios call)
+  - HTML textarea editor used instead of Tiptap for raw HTML/CSS PDF templates
+  - Variable insertion at cursor position uses textarea selectionStart/selectionEnd
+---
+
+## 2026-03-09 - US-070
+- Created SystemSettingsView.vue at /settings/system
+- Sections: Invoice (invoice_day, tax_rate), Dunning (delays + fees per level), Payment (retry_max, retry_interval_hours), Security (session_timeout, login_max_attempts), Branding (primary color, language)
+- Fetches GET /api/system-settings on mount, merges into form defaults
+- Save: PUT /api/system-settings with all key/value pairs, shows toast
+- Added route `settings/system` (SystemSettings) in router/index.ts
+- Files changed: frontend/src/views/SystemSettingsView.vue, frontend/src/router/index.ts
+- **Learnings for future iterations:**
+  - SystemSettingController skips keys not already in DB — UI sends all keys, backend ignores unknowns
+  - GET /api/system-settings returns flat array [{id, key, value, description}]
+  - PUT /api/system-settings expects {settings: [{key, value}]}
+---
+
+## 2026-03-09 - US-071
+- Created AdminUsersView.vue at /admin/users: user table with role badge, active status, parks count, edit/deactivate actions
+- Create User modal: name, email, role select, parks multi-select checkboxes, active toggle; POST /admin/users then POST /admin/users/{id}/parks
+- Edit User modal: same fields + Reset Password button (POST /auth/forgot-password)
+- Deactivate: confirmation dialog → DELETE /admin/users/{id}
+- Created AdminEmployeesView.vue at /admin/employees: employee table with name/role_title/park/contact/active
+- Create/Edit Employee modal: all fields + park select + optional linked user account select
+- Delete Employee: confirmation dialog → DELETE /admin/employees/{id}
+- Added /admin/users and /admin/employees routes to router (admin only)
+- vue-tsc --noEmit typecheck passes
+- Files changed: AdminUsersView.vue (new), AdminEmployeesView.vue (new), router/index.ts
+- **Learnings for future iterations:**
+  - Park multi-select uses checkbox list pattern (not FormSelect) for multi-selection
+  - Employee form.park_id/user_id use '' as null placeholder in FormSelect (converted to null on save)
+  - watch() import can be combined with onMounted for reactive option lists from async data
+---
+
+## 2026-03-09 - US-072
+- Created ReferenceDataView.vue: tab navigation for all 7 reference categories (country, city, document_type, termination_reason, damage_category, unit_feature, industry_sector)
+- Each tab: AppTable with sort_order (inline number input saves on blur), value, label, active toggle, edit/deactivate actions
+- Deactivated items shown grayed out with strikethrough in label column
+- Create/Edit modal with value, label, sort_order fields
+- Deactivate calls DELETE /reference-items/{id} (backend sets active=false)
+- Added /admin/reference-data route (admin only) to router
+- vue-tsc --noEmit typecheck passes
+- Files changed: ReferenceDataView.vue (new), router/index.ts
+- **Learnings for future iterations:**
+  - GET /reference-items returns flat array (not paginated) when filtered by category
+  - inline sort_order edit uses @blur + api.put to save silently without full reload
+  - Toggle active uses PUT /reference-items/{id} with { active: bool } — updates item in place
+---
+
+## 2026-03-09 - US-073
+- Created ProfileView.vue at /profile: personal info (read-only), change password form, 2FA section, notification preferences
+- Change password: POST /auth/change-password with current_password/password/password_confirmation
+- 2FA enable flow: POST /auth/2fa/setup → QR code + secret display → verify code via POST /auth/2fa/enable
+- 2FA disable: password confirmation modal → POST /auth/2fa/disable
+- Notification preferences: 5 toggles (task_assigned, invoice_overdue, application_assigned, waiting_list_available, dunning_escalated) saved via PUT /auth/notification-preferences
+- Added /profile route to router (all roles)
+- vue-tsc --noEmit typecheck passes
+- Files changed: ProfileView.vue (new), router/index.ts
+- **Learnings for future iterations:**
+  - /auth/me returns two_factor_enabled field — use this to show current 2FA status
+  - QR code from /auth/2fa/setup may be a data: URI or plain string — handle both display cases
+  - Notification preferences endpoint may not exist yet (gracefully handled with try/catch)
+---
+
+## 2026-03-09 - US-074
+- Updated notifications store: added AppNotification interface, recent[] list, markRead(), markAllRead(), startPolling() (60s interval)
+- Updated AppLayout to call startPolling() on mount
+- Updated AppTopBar: bell click opens dropdown with latest 5 notifications, time ago, unread highlight, mark all read, "Alle anzeigen" link to /notifications; outside click closes dropdown
+- Created NotificationsView.vue: full paginated list, read/unread filter, type badges (task/invoice/application/waiting-list/dunning), click to navigate to related entity + mark as read
+- Added /notifications route to router (all roles)
+- vue-tsc --noEmit typecheck passes
+- Files changed: stores/notifications.ts, components/AppTopBar.vue, layouts/AppLayout.vue, views/NotificationsView.vue, router/index.ts
+- **Learnings for future iterations:**
+  - Notification store polling uses setInterval stored in module-level variable to avoid duplicate intervals
+  - Outside-click dropdown close: addEventListener('click', handler) on document in onMounted, remove in onUnmounted
+  - @click.stop on the bell button prevents the document click handler from immediately closing the dropdown
+---
+
+## 2026-03-09 - US-075
+- Implemented global search UI in AppTopBar.vue
+- Created `frontend/src/api/search.ts` with `globalSearch(q)` calling `/api/search?q=`
+- Added search input with Cmd/Ctrl+K shortcut, debounced API call (300ms), grouped results dropdown by category (Customers, Units, Applications, Contracts, Invoices), loading spinner, empty state, and click-to-navigate
+- Files changed: `frontend/src/api/search.ts`, `frontend/src/components/AppTopBar.vue`
+- **Learnings for future iterations:**
+  - Search uses mousedown.prevent on results to avoid blur-before-click issue
+  - Keyboard events (Ctrl+K, Escape) registered globally on document in onMounted/onUnmounted
+  - Vue-tsc typecheck: `cd frontend && npx vue-tsc --noEmit`
+---
+
+## 2026-03-09 - US-076
+- Created WorkroomMenu.vue: sidebar bottom button "Workroom" opens dropdown with 5 quick-create options
+- Options: Neue Anfrage (application), Neuer Schaden (damage), Neues Ticket, Neue Factura (invoice), Neue Aufgabe (task)
+- Each option opens a creation modal pre-selecting auth.parks[0] as default park; user can change in modal
+- Chord keyboard shortcuts: press N then A/S/T/F/U within 800ms (ignored when focus is in input/textarea/select)
+- Success toast via Teleport to body, 3s auto-dismiss
+- Added WorkroomMenu import and usage in AppSidebar.vue (below nav, above sidebar close)
+- Files changed: frontend/src/components/WorkroomMenu.vue (new), frontend/src/components/AppSidebar.vue
+- Typecheck passes (vue-tsc --noEmit)
+- **Learnings for future iterations:**
+  - Chord shortcuts: track first key with timeout, check second key in same handler
+  - Ignore keyboard shortcuts when focused on INPUT/TEXTAREA/SELECT
+  - AppModal v-model accepts boolean — pass `(activeModal === 'type')` expression wrapped in parens for Vue reactivity
+  - Toast via Teleport to body avoids z-index issues inside sidebar
+---
+
+## 2026-03-09 - US-077
+- Implemented full /reports page with tab bar (Applications, Customers, Units, Finance, Audit)
+- Applications tab: park/date filter, 4 metric cards (total, conversion rate, avg processing time, completed), SVG bar chart by status, top sources table, Excel export
+- Customers tab: park/date filter, 4 metric cards (churn rate, total, active, months), SVG line chart (new/active/inactive by month), donut chart (status distribution), customers by park table, Excel export
+- Units/Finance/Audit tabs: placeholder stubs for US-078/079
+- API calls: GET /reports/applications and /reports/customers (graceful fallback on error)
+- Export: window.open `/api/reports/{type}?format=xlsx` in new tab
+- Files changed: frontend/src/views/ReportsView.vue
+- Typecheck passes
+- **Learnings for future iterations:**
+  - SVG charts built inline: bar chart uses rect elements, line chart uses path with M/L commands, donut uses arc paths
+  - Donut arc formula: M outer-start A r,r 0 large,1 outer-end L inner-end A r,r 0 large,0 inner-start Z
+  - Line chart x labels use filter((_, j) => j % 2 === 0) to avoid crowding
+  - Export to Excel: window.open with ?format=xlsx opens in new tab without Vue router
+---
+
+## 2026-03-09 - US-078
+- Extended ReportsView.vue with full Units and Finance tab implementations
+- Units tab: park filter, 4 metric cards (total/occupancy rate/avg rent per m²/vacancy), occupancy donut chart (2 segments), top damaged units table, vacant units table sorted by duration
+- Finance tab: park/date filter, outstanding debt metric card (red highlight), revenue vs plan grouped bar chart, payment methods donut, top debtors table, DATEV export modal (date range → window.open ?format=datev)
+- DATEV modal: inline Teleport to body, date range inputs, download button
+- Files changed: frontend/src/views/ReportsView.vue
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Grouped bar chart: two rects side by side per group, bw = groupW/2 - gap
+  - DATEV export uses separate datevFrom/datevTo (not the main date filters) so user can choose specific fiscal period
+  - `exportExcel` function already existed from US-077; Finance tab calls it with 'finance' cast to avoid TS complaints
+---
+
+## 2026-03-09 - US-079
+- Extended ReportsView.vue: Audit tab visible to admin role only (v-if auth.role === 'admin', hidden from tab bar otherwise)
+- Audit table: user, action (colored badge: created/updated/deleted), model_type, model_id, old/new value summaries, IP, timestamp
+- Filters: user select (loaded from /admin/users), model_type select (predefined list), date range
+- Click row: expand/collapse inline diff view showing full old/new values in JSON format (red/green highlighted pre blocks)
+- Pagination: prev/next buttons with page info
+- Export CSV: window.open /api/audit-log?format=csv with filters
+- Files changed: frontend/src/views/ReportsView.vue
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Separate watch for auditPage (triggers loadAuditLog), and watch for filters (resets page to 1 first)
+  - Inline diff uses template v-for with `template` + conditional detail row below each data row
+  - action-badge CSS classes use dot notation with action value: created/updated/deleted
+---
+
+## 2026-03-09 - US-080
+- Created ApplicationReportsView.vue at /applications/reports
+- Application metrics section: park/date filter, 4 metric cards (total, conversion rate, completed, avg time new→complete), status breakdown bar chart + status table with percentage column
+- Waiting list section: 3 metric cards (total, avg wait days, unit types count), entries by unit type table
+- Export to Excel: window.open /api/reports/applications?format=xlsx
+- API: GET /reports/applications and GET /reports/waiting-list (graceful error fallback)
+- Added route applications/reports to router (same roles as applications)
+- Files changed: ApplicationReportsView.vue (new), router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Route applications/reports must be defined BEFORE applications/:id to avoid path conflict
+  - Two separate API calls loaded via Promise.all in loadAll()
+---
+
+## 2026-03-09 - US-081
+- Created CustomerReportsView.vue at /customers/reports: status metrics (dynamic from API), blacklist count, GDPR deletion count, new-per-month line chart
+- Created UnitReportsView.vue at /units/reports: status metrics with color coding, damage by status metrics, total repair cost, vacancy by type table, repair cost by type table
+- Both have park/date range filters and Excel export
+- Routes added before :id catch-all routes to avoid conflicts
+- Files changed: CustomerReportsView.vue (new), UnitReportsView.vue (new), router/index.ts
+- Typecheck passes
+---
+
+## 2026-03-09 - US-082
+- Created FinanceReportsView.vue at /finance/reports with 4 tabs: Revenue, Debtors, Payments, Vendors
+- Revenue tab: plan vs actual monthly table with diff column (green/red), year total metric
+- Debtors tab: age bucket table (0-30/31-60/60+ days), dunning level badge, total owed metric
+- Payments tab: bar chart by method + success/failed counts table, avg payment days metric
+- Vendors tab: 3 tables (by park / by specialty / by month)
+- All tabs: park + date range filter, Excel export
+- Files changed: FinanceReportsView.vue (new), router/index.ts
+- Typecheck passes
+---
+
+## 2026-03-09 - US-083
+- Updated ForbiddenView.vue: German "Kein Zugriff" with back-to-dashboard button
+- Created NotFoundView.vue: "Seite nicht gefunden" with back-to-dashboard button; added /404 route and /:pathMatch(.*)* catch-all redirect
+- Created stores/toast.ts: simple module-level toasts ref + showToast(message, type, duration) function
+- Updated axios.ts: global error interceptor - network errors show 'Verbindungsfehler...', 500+ errors show API message
+- Updated AppLayout.vue: renders global toasts via Teleport to body (success=green, error=red, info=blue)
+- Created AppSkeleton.vue: animated shimmer table rows (rows/cols props)
+- Created AppEmptyState.vue: icon + message + optional action slot
+- Files changed: ForbiddenView.vue, NotFoundView.vue (new), AppSkeleton.vue (new), AppEmptyState.vue (new), toast.ts (new), axios.ts, AppLayout.vue, router/index.ts
+- Typecheck passes
+- **Learnings for future iterations:**
+  - useToastStore() is NOT a Pinia store — it's a plain composable with module-level state (simpler for cross-component toasts)
+  - 404 catch-all must be last in routes array: path: '/:pathMatch(.*)*' redirects to /404
+  - Global axios error handler: use error.response?.status >= 500 (not just 500) to catch all server errors
+---
+
+## 2026-03-09 - US-084
+- AppSidebar: accepts collapsed prop + emits toggle; collapsed=true sets width 56px (icon-only); hamburger button in sidebar header
+- AppLayout: manages sidebarCollapsed ref (default true on <1024px), passes to AppSidebar, passes toggle-sidebar emit up from TopBar
+- AppTopBar: emits toggle-sidebar; mobile-hamburger button (hidden on desktop via display:none); park-selector and search-wrapper have hide-mobile class (display:none on <640px); user-name hidden on mobile
+- AppModal: full-width bottom sheet on <640px via @media query
+- DashboardView: KPI grid 2 cols on tablet (<1024px), 1 col on mobile (<640px); row-2 and kanban become single column on tablet
+- AppTable already had overflow-x: auto on .table-wrapper
+- Files changed: AppSidebar.vue, AppTopBar.vue, AppModal.vue, AppLayout.vue, DashboardView.vue
+- Typecheck passes
+---
+
+## 2026-03-09 - US-085
+- Created GenerateInvoiceJob.php: processes single contract → idempotency check (billing_month unique constraint), calculates rent with discounts, adds electricity charges (unbilled readings × price_per_kwh), creates invoice + items, marks readings as billed, logs result
+- Updated GenerateMonthlyInvoices job: now dispatches GenerateInvoiceJob per active contract (not inline processing)
+- Created GenerateMonthlyInvoicesCommand: signature `invoices:generate-monthly --month=`, scheduled monthly on 1st at 06:00
+- Added billing_month migration (Y-m format, unique constraint on contract_id+billing_month)
+- Added invoice_id FK migration to electricity_readings (nullOnDelete)
+- Updated InvoiceController::generateMonthly: admin-only check, accepts optional month param
+- Tests (all pass): create invoice with correct amount, idempotency skip, skip inactive contract, dispatch-per-contract
+- Files changed: GenerateInvoiceJob.php (new), GenerateMonthlyInvoices.php, GenerateMonthlyInvoicesCommand.php (new), InvoiceController.php, Invoice.php, ElectricityReading.php, 2 migrations, console.php, GenerateInvoiceJobTest.php (new)
+- **Learnings for future iterations:**
+  - Queue::fake() + job->handle() directly: inner dispatch() calls are captured by Queue::fake
+  - Contract status enum values include: active, terminated_by_customer, terminated_by_lfg, draft, awaiting_signature, signed, declined, expired
+  - unique(['contract_id', 'billing_month']) provides DB-level idempotency guarantee
+---
+
+## 2026-03-09 - US-086
+- What was implemented: E2E contract termination → final invoice → deposit return flow
+- Files changed:
+  - backend/app/Models/Contract.php: added final_invoice_waived to fillable/casts
+  - backend/app/Models/DamageReport.php: added is_termination_inspection boolean cast
+  - backend/app/Http/Controllers/ContractController.php: terminate() now creates pro-rated final invoice, sets unit to maintenance, creates termination inspection DamageReport
+  - backend/app/Http/Controllers/DamageReportController.php: resolving termination inspection sets unit free and dispatches NotifyWaitingListEntries
+  - backend/app/Http/Controllers/DepositController.php: processReturn() blocks if final invoice unpaid (unless final_invoice_waived=true)
+  - backend/database/migrations/2026_03_09_000004_extend_billing_month_length.php: extended billing_month varchar from 7 to 20 to accommodate '-final' suffix
+  - backend/tests/Feature/Contract/TerminationFlowTest.php: 7 integration tests
+- **Learnings for future iterations:**
+  - billing_month for final invoices uses format 'YYYY-MM-final' (13 chars), needed column extension from varchar(7) to varchar(20)
+  - DamageReport transitions: reported → in_assessment → repair_ordered → in_repair → resolved (not 'open')
+  - Status update endpoint for damage reports is PUT (not PATCH): PUT /api/damage-reports/{id}/status
+  - final_invoice_waived is a boolean on contracts allowing deposit return even without paid final invoice
+---
+
+## 2026-03-09 - US-087
+- What was implemented: Performance caching and DB indexes
+- Files changed:
+  - backend/database/migrations/2026_03_09_000005_add_performance_indexes.php: composite indexes on customers, units, invoices, applications, contracts
+  - backend/tests/Feature/Dashboard/DashboardPerformanceTest.php: response time <200ms and cache hit tests
+- **Learnings for future iterations:**
+  - Dashboard KPI caching was already in DashboardController::kpis() with 30s TTL
+  - All major list endpoints already paginated with paginate(20)
+  - Application/invoice list endpoints already eager-load relations
+---
+
+## 2026-03-09 - US-088
+- What was implemented: Security hardening
+- Files changed:
+  - routes/api.php: throttle:10,1 on login
+  - CustomerController: max 10MB for documents, only pdf/jpeg/jpg/png
+  - DamageReportController: max 10MB, putFile() for UUID names
+  - MailController: sanitizeHtml() with strip_tags allowlist before storing body_html
+  - PaymentController: Mollie webhook HMAC sig check if MOLLIE_WEBHOOK_SECRET env set
+  - config/services.php: added mollie.webhook_secret from env
+  - config/cors.php: CORS restricted to FRONTEND_URL env var
+- **Learnings:**
+  - Laravel's putFile() generates UUID filenames automatically; put() does not
+  - throttle:10,1 = 10 requests per 1 minute per IP
+  - CORS config goes in config/cors.php, Laravel 11 picks it up automatically
+---
+
+## 2026-03-09 - US-089
+- What was implemented: GDPR compliance
+- Files changed:
+  - CustomerController: gdprDelete uses '[gelöscht]', also wipes address/city/zip; consent auto-set on create; added dataExport()
+  - routes/api.php: GET /customers/{id}/data-export
+  - migration: data_retention_years=10 system setting
+  - CustomerTest: updated GDPR placeholder assertion
+- **Learnings:**
+  - gdpr_consent_at field already existed in customers table from initial migration
+  - System settings table uses 'key' unique constraint with insertOrIgnore
+---
+
+## 2026-03-09 - US-090 to US-092
+- US-090: DemoSeeder created with full dataset for all modules; DatabaseSeeder delegates to it; invoice numbers use date prefix to avoid duplicates on re-run
+- US-091: Docker config (backend PHP 8.3-fpm, frontend Node 20 + nginx), docker-compose with mysql/redis/mailhog/minio, .env.example with all vars, GitHub Actions CI
+- US-092: dedoc/scramble installed for OpenAPI 3.0 auto-docs; AdminDocsAccess middleware restricts to admin in production; /api/documentation redirects to /docs/api
+- **Learnings:**
+  - Scramble auto-generates docs from route reflection with no annotations needed
+  - dedoc/scramble needs --ignore-platform-req=ext-gd on Windows dev (ext-gd not enabled in CLI)
+  - DemoSeeder invoice numbers need uniqueness per run (use date prefix)
+---

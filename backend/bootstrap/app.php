@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'park.scope' => \App\Http\Middleware\ParkScopeMiddleware::class,
+            'block-2fa-tokens' => \App\Http\Middleware\Block2faTokens::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

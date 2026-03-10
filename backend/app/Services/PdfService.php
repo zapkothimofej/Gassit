@@ -33,7 +33,10 @@ class PdfService
     {
         $html = $templateHtml;
         foreach ($variables as $key => $value) {
-            $html = str_replace('{' . $key . '}', (string) ($value ?? ''), $html);
+            $escaped = $key === 'invoice_items'
+                ? (string) ($value ?? '')
+                : htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
+            $html = str_replace('{' . $key . '}', $escaped, $html);
         }
         return $html;
     }
