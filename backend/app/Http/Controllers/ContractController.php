@@ -143,7 +143,8 @@ class ContractController extends Controller
         $old = $contract->toArray();
 
         $contract->update([
-            'status'              => 'awaiting_signature',
+            'status'             => 'awaiting_signature',
+            'esign_provider_id'  => $esignProviderId,
         ]);
 
         $this->writeAuditLog($request, 'send_for_signature', $contract, $old, [
@@ -176,8 +177,8 @@ class ContractController extends Controller
 
         $contract = Contract::findOrFail($data['contract_id']);
 
-        if ($contract->status !== 'awaiting_signature') {
-            return response()->json(['message' => 'Contract is not awaiting signature.'], 422);
+        if (!$this->contractService->canTransition($contract, 'signed')) {
+            return response()->json(['message' => 'Signature already recorded or transition not allowed.'], 200);
         }
 
         // Store signed PDF stub
@@ -278,8 +279,8 @@ class ContractController extends Controller
     {
         $contract = Contract::with('unit')->findOrFail($id);
 
-        if ($contract->status !== 'active') {
-            return response()->json(['message' => "Only active contracts can be renewed. Current status: '{$contract->status}'."], 422);
+        if (!$this->contractService->canTransition($contract, 'expired')) {
+            return response()->json(['message' => "Cannot transition contract from '{$contract->status}' to 'expired'."], 422);
         }
 
         $data = $request->validate([

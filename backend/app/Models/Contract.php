@@ -27,6 +27,7 @@ class Contract extends Model
         'notice_period_days', 'rent_amount', 'deposit_amount', 'insurance_amount',
         'status', 'signed_pdf_path', 'signed_at', 'terminated_at',
         'termination_reason_id', 'termination_notice_date', 'final_invoice_waived',
+        'esign_provider_id',
     ];
 
     protected $casts = [
