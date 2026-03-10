@@ -26,6 +26,11 @@ api.interceptors.response.use(
 
     const { showToast } = useToastStore()
 
+    // 422 validation errors — let caller handle inline
+    if (error.response?.status === 422) {
+      return Promise.reject(error)
+    }
+
     if (!error.response) {
       showToast('Verbindungsfehler, bitte versuche es erneut', 'error')
     } else if (error.response.status >= 500) {
