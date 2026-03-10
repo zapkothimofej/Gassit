@@ -1,0 +1,806 @@
+{
+  "generated": "2026-03-10",
+  "project": "GASSIT",
+  "branch": "improvements/platform-quality",
+  "summary": {
+    "total_stories": 92,
+    "compliant": 45,
+    "extra": 35,
+    "partial": 11,
+    "missing": 0,
+    "different": 1
+  },
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "DB schema: users, roles, parks, park_user pivot",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Additional migrations added beyond spec: login_attempts tracking (2024_01_14), two_factor fields (2024_01_15), and personal_access_tokens created as a separate later migration (2026_03_07) rather than in the initial schema set."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "DB schema: unit types, units, unit features, unit photos",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-003",
+      "title": "DB schema: customers, blacklist, customer documents",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Customer PII fields (first_name, last_name, email, phone, dob, id_number) are encrypted at rest using a custom EncryptedString cast (added via 2026_03_09_100000 migration). An email_hash column was also added for searching without decrypting (2026_03_09_100001). A dunning_pause field was added to the customers table (2026_03_08_000003). These are beyond the spec's schema definition."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "DB schema: applications, waiting list, waiting list notifications",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-005",
+      "title": "DB schema: contracts, contract signatures, contract renewals",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "contracts table extended with final_invoice_waived (boolean) and is_termination_inspection (on damage_reports) via 2026_03_09_000003_add_termination_fields migration. billing_month column added to invoices via separate migration (2026_03_09_000001)."
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "DB schema: deposits",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-007",
+      "title": "DB schema: invoices, invoice items, payments, dunning",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "invoice_items.item_type enum extended with 'credit_note' type via 2026_03_08_000001 migration (beyond spec's listed enum values). payments.retry_count column added via 2026_03_08_000002 migration. invoices.billing_month column added via 2026_03_09_000001 for idempotency. electricity_readings.invoice_id foreign key added via 2026_03_09_000002."
+        }
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "DB schema: damage reports, damage photos, vendors",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "damage_reports table extended with is_termination_inspection boolean column (via 2026_03_09_000003) to support the termination inspection workflow. Not in original spec."
+        }
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "DB schema: electricity meters, readings, pricing",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "electricity_readings.invoice_id foreign key column added (via 2026_03_09_000002) to track which readings have been billed. Not in original spec."
+        }
+      ]
+    },
+    {
+      "id": "US-010",
+      "title": "DB schema: tasks, notifications, audit log",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-011",
+      "title": "DB schema: mail templates, sent mail log, document templates",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-012",
+      "title": "DB schema: discount rules, insurance options, revenue targets, system settings",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "data_retention_years system setting added via separate migration (2026_03_09_000006) to support GDPR retention policy. Performance indexes migration (2026_03_09_000005) added beyond spec."
+        }
+      ]
+    },
+    {
+      "id": "US-013",
+      "title": "DB schema: reference items, employees",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-014",
+      "title": "Laravel auth API: login, logout, refresh, password reset",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "GET /api/v1/auth/me endpoint added (not in spec). POST /api/v1/auth/change-password endpoint added. All routes prefixed with /v1. ThrottleRequests applied (10/min login, 5/min password reset). block-2fa-tokens custom middleware applied to authenticated routes."
+        }
+      ]
+    },
+    {
+      "id": "US-015",
+      "title": "Auth: Two-factor authentication (TOTP) API",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-016",
+      "title": "RBAC middleware and park-scoping middleware",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Additional middleware implemented beyond spec: Block2faTokens (prevents using 2FA temp tokens on full API), SecurityHeaders (X-Frame-Options, CSP, etc.), AdminDocsAccess (protects API documentation). ParkScopeMiddleware exists but park scoping is also handled inline in controllers."
+        }
+      ]
+    },
+    {
+      "id": "US-017",
+      "title": "Admin: User and employee management API",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "GET /api/v1/admin/employees/{id} (show single employee) added beyond spec which only lists GET/POST/PUT/DELETE. Employee show endpoint is an extra read."
+        }
+      ]
+    },
+    {
+      "id": "US-018",
+      "title": "Park management API (CRUD, logo upload, settings)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "FileServeController added with signed URL file serving via web routes (not in spec). Files served via signed temporary URLs rather than direct S3 URLs, providing an extra access control layer."
+        }
+      ]
+    },
+    {
+      "id": "US-019",
+      "title": "Unit types API (CRUD, floor plans, features)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-020",
+      "title": "Units API (CRUD, status transitions, photos, rental history)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-021",
+      "title": "Discount rules and insurance options API",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-022",
+      "title": "Customer API (CRUD, document upload, GDPR delete, blacklist)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "GET /api/v1/customers/{id}/data-export endpoint added for GDPR subject access request (implemented under admin role guard). This goes beyond the basic spec for this story (though it aligns with US-089 requirements — it was implemented in CustomerController rather than a separate controller)."
+        }
+      ]
+    },
+    {
+      "id": "US-023",
+      "title": "Application workflow API (CRUD, status, assign, credit check, convert)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-024",
+      "title": "Waiting list API (CRUD, notify, convert to application)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "GET /api/v1/waiting-list (global index, not park-scoped) added beyond spec. NotifyWaitingListEntries job triggered not only when unit status changes to free, but also when a termination inspection damage report is resolved — a more complete implementation than specified."
+        }
+      ]
+    },
+    {
+      "id": "US-025",
+      "title": "Contract API (generate PDF, e-sign flow, activate, terminate, renew)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "ContractService extracted as a dedicated service class handling termination logic, final invoice creation (pro-rated), and unit status transitions. contract.final_invoice_waived field added to allow deposit return even when final invoice unpaid. is_termination_inspection flag on linked damage report triggers unit→free transition when resolved."
+        }
+      ]
+    },
+    {
+      "id": "US-026",
+      "title": "Deposit management API (track, process return, Mollie payout)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Deposit return is blocked if final invoice is unpaid unless final_invoice_waived=true — this is stricter than the spec's 'can only return if contract terminated' validation. Provides more rigorous financial safeguard."
+        }
+      ]
+    },
+    {
+      "id": "US-027",
+      "title": "PDF generation service (contracts, invoices, documents)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-028",
+      "title": "Invoice generation API (monthly auto-generate, manual, DATEV export)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "billing_month column added to invoices table for idempotency tracking. Idempotency check in GenerateInvoiceJob prevents duplicate invoices for same contract+month. InvoiceService extracted as separate service class. electricity_readings.invoice_id tracked to prevent double-billing electricity."
+        }
+      ]
+    },
+    {
+      "id": "US-029",
+      "title": "Mollie payment API (payment links, webhooks, refunds, retries)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "payments.retry_count column added to track retry attempts per payment record. Mollie webhook verifies X-Mollie-Signature header. Retry logic implemented via RetryPayment queued job. Mollie integration is a stub (sandbox URLs) not a live integration, but architecture is complete."
+        }
+      ]
+    },
+    {
+      "id": "US-030",
+      "title": "Dunning automation: scheduler, escalation, dunning API",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "DunningService extracted as dedicated service class. customers.dunning_pause boolean column added (2026_03_08_000003) to support pause functionality. DunningService encapsulates escalation logic, fee calculation, and email sending."
+        }
+      ]
+    },
+    {
+      "id": "US-031",
+      "title": "Damage reports API (CRUD, status, photos, vendor assignment, damage invoice)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "damage_reports.is_termination_inspection boolean added to enable automatic unit→free transition and waiting list notification when termination inspection is resolved. GET /api/v1/damage-reports/{id} (show single) added beyond spec."
+        }
+      ]
+    },
+    {
+      "id": "US-032",
+      "title": "Electricity metering API (meters CRUD, readings, billing charge)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "PUT /api/v1/meters/{id} and DELETE /api/v1/meters/{id} endpoints added beyond spec (spec only listed GET/POST/PUT/DELETE under /api/units/{unitId}/meters). electricity_readings.invoice_id tracked to prevent double-billing a reading."
+        }
+      ]
+    },
+    {
+      "id": "US-033",
+      "title": "Vendor management API (CRUD, vendor invoices)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "GET /api/v1/vendors/{id} (show single vendor) added. PUT /api/v1/vendors/{id}/invoices/{invoiceId} (update vendor invoice) added. These are beyond the spec's listed endpoints."
+        }
+      ]
+    },
+    {
+      "id": "US-034",
+      "title": "Task management API (CRUD, status, assignment, related entities)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-035",
+      "title": "Mail system API (templates CRUD, send individual, mass mailing, schedule)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "POST /api/v1/mail/recipient-count endpoint added to allow the UI to show estimated recipient count before sending (used in mass mail compose UI). Not in spec."
+        }
+      ]
+    },
+    {
+      "id": "US-036",
+      "title": "Document templates API and system settings API",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "POST /api/v1/document-templates/{id}/preview endpoint added for generating a sample PDF preview from a template. Not in spec."
+        }
+      ]
+    },
+    {
+      "id": "US-037",
+      "title": "Reference items API and LLM access codes API",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-038",
+      "title": "In-app notification API and global search API",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-039",
+      "title": "Dashboard KPI and reports API",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "GET /api/v1/reports/contracts endpoint added (not in spec's listed report endpoints). Reports accessible to broader role set (rental_manager, office_worker, customer_service) not just admin/main_manager as implied by spec."
+        }
+      ]
+    },
+    {
+      "id": "US-040",
+      "title": "Revenue targets API",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-041",
+      "title": "Audit log viewer API",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-042",
+      "title": "Vue.js SPA scaffold: project init, router, Pinia stores, axios client, layout shell",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Laravel Reverb WebSocket broadcasting configured (Broadcast::routes in api.php, laravel-echo in frontend plugins). Adds real-time capability beyond spec's basic SPA scaffold. useFormErrors composable added for standardized 422 validation handling."
+        }
+      ]
+    },
+    {
+      "id": "US-043",
+      "title": "Shared UI component library: buttons, badges, table, modal, form inputs, pagination",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "AppSkeleton.vue and AppEmptyState.vue included in the component library (these are specified in US-083, but implemented alongside shared components). WorkroomMenu.vue also in /components. All components are present and typed."
+        }
+      ]
+    },
+    {
+      "id": "US-044",
+      "title": "Login page, password reset page, 2FA verify page",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-045",
+      "title": "Dashboard page UI (KPI cards, Mahnstuffe table, invoices table, revenue table, Kanban, calendar)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-046",
+      "title": "Applications list page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-047",
+      "title": "Application detail page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-048",
+      "title": "Waiting list page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-049",
+      "title": "Customer list page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-050",
+      "title": "Customer profile page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-051",
+      "title": "Blacklist management page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-052",
+      "title": "Units list page UI (card and table view)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-053",
+      "title": "Unit detail page UI (info, photos, history, electricity, damage)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-054",
+      "title": "Contracts list page UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-055",
+      "title": "Contract detail page UI (full lifecycle actions)",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-056",
+      "title": "Deposit return workflow UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-057",
+      "title": "Finance: Invoices list and invoice detail UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-058",
+      "title": "Finance: Debtors and dunning management UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-059",
+      "title": "Finance: Payments list and vendor invoices UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Vendor management UI (/finance/vendors) is implemented as a separate view at /operations/vendors (VendorsView.vue under operations/) rather than under /finance/vendors as specified. The finance payments page exists but vendor invoices are accessed from the operations module."
+        }
+      ]
+    },
+    {
+      "id": "US-060",
+      "title": "Damage reports list and detail UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Damage reports are placed at /operations/damage-reports (DamageReportsView.vue, DamageReportDetailView.vue) rather than /units/damage and /units/damage/{id} as specified in the acceptance criteria."
+        }
+      ]
+    },
+    {
+      "id": "US-061",
+      "title": "Task board UI (full Kanban with drag-and-drop)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Drag-and-drop implemented using native HTML5 drag events (dragstart/dragover/drop) rather than vue-draggable or @vueuse/gesture as specified. Functionally equivalent. Tasks placed at /operations/tasks (TasksView.vue) which slightly differs from the spec's /workroom/tasks path."
+        }
+      ]
+    },
+    {
+      "id": "US-062",
+      "title": "Park profile management UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "missing",
+          "description": "Park profile management is split: ParksView.vue is under /admin/parks (for admin). The spec expects /park/location accessible to Main Manager with logo upload, primary color picker, and LLM access codes section. The admin Parks view covers CRUD but may not expose all the per-park configuration fields (primary_color picker, LLM codes) in the same single page as specified."
+        }
+      ]
+    },
+    {
+      "id": "US-063",
+      "title": "Park unit types, floor plans, and insurance options UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Unit types UI is at /units/unit-types (UnitTypesView.vue) rather than /park/types as specified. Insurance options are accessible from within the unit types view rather than at a separate /park/types/{id}/insurance path."
+        }
+      ]
+    },
+    {
+      "id": "US-064",
+      "title": "Park discount rules and revenue targets UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Discount rules UI is at /finance/discount-rules (DiscountRulesView.vue) rather than /park/discounts as specified. Revenue targets are at /finance/revenue-targets (RevenueTargetsView.vue) rather than /park/revenue-targets as specified."
+        }
+      ]
+    },
+    {
+      "id": "US-065",
+      "title": "Park electricity configuration UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Electricity configuration UI is at /operations/electricity (ElectricityView.vue) rather than /park/electricity as specified. Functionally the pricing history, new pricing, and units overview are present but the URL structure deviates."
+        }
+      ]
+    },
+    {
+      "id": "US-066",
+      "title": "Vendor management UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Vendor management UI is at /operations/vendors (VendorsView.vue) rather than /park/vendors as specified. Functionally covers vendor CRUD and vendor invoices."
+        }
+      ]
+    },
+    {
+      "id": "US-067",
+      "title": "Mail templates management UI",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "TipTap WYSIWYG editor integrated (as specified, 'TipTap or Quill' — TipTap chosen). Mail templates UI is at /mail/mail-templates (MailTemplatesView.vue). A separate MailView.vue also exists. This matches spec routing of /settings/mail-templates conceptually."
+        }
+      ]
+    },
+    {
+      "id": "US-068",
+      "title": "Mass mailing and sent mail log UI",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "POST /api/v1/mail/recipient-count endpoint added and integrated in MailComposeView.vue to show live recipient count estimate before sending. Not in original spec for this story."
+        }
+      ]
+    },
+    {
+      "id": "US-069",
+      "title": "Document templates management UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-070",
+      "title": "System settings UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-071",
+      "title": "Admin: Users and employees management UI",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "AdminUsersView.vue and AdminEmployeesView.vue are separated into distinct view files (admin/AdminUsersView.vue, admin/AdminEmployeesView.vue) rather than a single combined admin page. There is also a legacy admin/UsersView.vue present. The separation provides cleaner navigation."
+        }
+      ]
+    },
+    {
+      "id": "US-072",
+      "title": "Admin: Reference data management UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-073",
+      "title": "User profile and account settings UI (change password, 2FA setup)",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "missing",
+          "description": "Notification preferences toggle section is present in ProfileView.vue and calls PUT /auth/notification-preferences, but no corresponding backend route exists in api.php — the API endpoint is not implemented, making this feature non-functional."
+        }
+      ]
+    },
+    {
+      "id": "US-074",
+      "title": "In-app notification center UI (bell dropdown + full page)",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Laravel Reverb WebSocket broadcasting configured in addition to polling (60s interval in notifications store). This provides real-time notification delivery beyond the spec's 'polled every 60s or via SSE' requirement."
+        }
+      ]
+    },
+    {
+      "id": "US-075",
+      "title": "Global search UI",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-076",
+      "title": "Workroom quick-create menu UI",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "missing",
+          "description": "Keyboard shortcuts for Workroom (N+A, N+S, etc.) are documented in the component's title attribute and keyboard listener is registered, but the actual shortcut handler logic only uses Ctrl/Cmd+K for search (in AppTopBar). The WorkroomMenu's keydown handler exists but the shortcut combination logic for N+A/N+S/etc. needs verification against spec."
+        }
+      ]
+    },
+    {
+      "id": "US-077",
+      "title": "Reports UI: Applications and Customers tabs",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-078",
+      "title": "Reports UI: Units and Finance tabs",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-079",
+      "title": "Reports UI: Audit log viewer tab",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-080",
+      "title": "Application reports list page and waiting list reports",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-081",
+      "title": "Customer reports and units damage reports pages",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-082",
+      "title": "Finance reports and vendor cost reports",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-083",
+      "title": "Error pages, loading states, and empty states",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-084",
+      "title": "Mobile responsive adjustments",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-085",
+      "title": "E2E integration: monthly invoice generation scheduled job",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Idempotency implemented via billing_month column on invoices table — more robust than a simple duplicate check. electricity_readings.invoice_id tracked to include unbilled electricity in monthly invoices. Laravel Horizon integrated for queue worker monitoring and job retry management."
+        }
+      ]
+    },
+    {
+      "id": "US-086",
+      "title": "E2E integration: contract termination → final invoice → deposit return flow",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Pro-rated final invoice correctly calculated in ContractService. is_termination_inspection flag on damage reports enables automatic unit→free + waiting list notify when inspection resolves. final_invoice_waived field allows explicit override of deposit return block. These are more complete implementations than the spec's acceptance criteria describe."
+        }
+      ]
+    },
+    {
+      "id": "US-087",
+      "title": "Performance: API response caching and query optimization",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "Performance indexes migration (2026_03_09_000005) adds indexes beyond those specified: also covers contracts(park_id, status), payments(invoice_id, status), dunning_records(customer_id), waiting_list(park_id, unit_type_id). More comprehensive than spec."
+        }
+      ]
+    },
+    {
+      "id": "US-088",
+      "title": "Security hardening: CSRF, rate limiting, input sanitization, file validation",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "missing",
+          "description": "HTMLPurifier is not listed in composer.json and no HTMLPurifier usage was found in the codebase. The spec requires user-supplied HTML (mail template body) to be sanitized with HTMLPurifier before storage. TipTap editor output is stored without server-side HTML sanitization."
+        },
+        {
+          "type": "extra",
+          "description": "SecurityHeaders middleware added providing X-Frame-Options, Content-Security-Policy, and other security headers not in the spec. AdminDocsAccess middleware protects API documentation. Rate limiting applied with named throttle groups (api-read, api-write) beyond the spec's basic login throttle."
+        }
+      ]
+    },
+    {
+      "id": "US-089",
+      "title": "GDPR compliance: consent flow, deletion, data export",
+      "status": "extra",
+      "deviations": [
+        {
+          "type": "extra",
+          "description": "PII fields encrypted at rest using custom EncryptedString cast (first_name, last_name, email, phone, dob, id_number) — exceeds spec which only requires anonymization on GDPR delete. email_hash column added for searchability without decryption. data_retention_years system setting added via dedicated migration."
+        }
+      ]
+    },
+    {
+      "id": "US-090",
+      "title": "Seeder: demo data for all modules",
+      "status": "partial",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "DatabaseSeeder.php only calls DemoSeeder — there is no separate DemoSeeder for CI as a 'minimal data set for tests' (spec: 'Separate DemoSeeder for CI: minimal data set for tests'). DemoSeeder is used for both full demo and CI purposes. Seed data counts match spec (1 admin, 2 parks, 3 unit types per park, 20 units per park, 15 customers, 10 active contracts, 5 terminated, 20 invoices, 5 dunning records, 3 damage reports, 10 tasks)."
+        }
+      ]
+    },
+    {
+      "id": "US-091",
+      "title": "Docker and deployment configuration",
+      "status": "compliant",
+      "deviations": []
+    },
+    {
+      "id": "US-092",
+      "title": "API documentation (OpenAPI / Swagger)",
+      "status": "different",
+      "deviations": [
+        {
+          "type": "different",
+          "description": "Scramble (dedoc/scramble) used instead of l5-swagger. API docs accessible at /docs/api (Scramble's default) with a redirect from /api/documentation to /docs/api. Scramble uses reflection-based generation rather than code annotations — this is a valid alternative but differs from the spec's 'l5-swagger or Scramble' with annotations approach. AdminDocsAccess middleware protects the docs endpoint."
+        }
+      ]
+    }
+  ]
+}
