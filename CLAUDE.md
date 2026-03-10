@@ -2,6 +2,15 @@
 
 You are an autonomous coding agent working on a software project.
 
+## Local Dev
+
+- Start all services: `docker compose up -d`
+- MySQL is at 127.0.0.1:3306, DB: gassit, user: gassit, password: secret
+- Run migrations: `cd backend && php artisan migrate --force`
+- Frontend dev server: `cd frontend && npm run dev` (or via docker-compose port 5173)
+- Mail UI (MailHog): http://localhost:8025
+- MinIO console: http://localhost:9001
+
 ## Your Task
 
 1. Read the PRD at `prd.json` (in the same directory as this file)

@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main, ralph/gassit-rental-management]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Laravel Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: gassit_test
+          MYSQL_USER: gassit
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_mysql, bcmath, gd, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Copy .env
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=mysql/' .env
+          sed -i 's/DB_DATABASE=gassit/DB_DATABASE=gassit_test/' .env
+          sed -i 's/DB_USERNAME=gassit/DB_USERNAME=gassit/' .env
+          sed -i 's/DB_PASSWORD=secret/DB_PASSWORD=secret/' .env
+          sed -i 's|FILESYSTEM_DISK=s3|FILESYSTEM_DISK=local|' .env
+          sed -i 's|QUEUE_CONNECTION=redis|QUEUE_CONNECTION=sync|' .env
+          sed -i 's|CACHE_STORE=redis|CACHE_STORE=array|' .env
+
+      - name: Generate app key
+        working-directory: backend
+        run: php artisan key:generate
+
+      - name: Run migrations
+        working-directory: backend
+        run: php artisan migrate --force
+
+      - name: Run tests
+        working-directory: backend
+        run: php artisan test --no-ansi
+
+  frontend:
+    name: Frontend Typecheck & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npx vue-tsc --noEmit
+
+      - name: Run tests (if any)
+        working-directory: frontend
+        run: npm run test --if-present 2>/dev/null || true

@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
+
+class Unit extends Model
+{
+    use HasFactory, SoftDeletes, Searchable;
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'unit_number' => $this->unit_number,
+            'building' => $this->building,
+            'floor' => $this->floor,
+            'status' => $this->status,
+            'park_id' => $this->park_id,
+        ];
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+
+    protected $fillable = [
+        'park_id',
+        'unit_type_id',
+        'unit_number',
+        'floor',
+        'building',
+        'size_m2',
+        'rent_override',
+        'deposit_override',
+        'status',
+        'notes',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'size_m2' => 'decimal:2',
+            'rent_override' => 'decimal:2',
+            'deposit_override' => 'decimal:2',
+        ];
+    }
+
+    public function park(): BelongsTo
+    {
+        return $this->belongsTo(Park::class);
+    }
+
+    public function unitType(): BelongsTo
+    {
+        return $this->belongsTo(UnitType::class);
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(UnitPhoto::class);
+    }
+}

@@ -1,0 +1,15 @@
+## Codebase Patterns
+- Laravel backend lives in `backend/` subdirectory
+- Use docker-compose for local dev: `docker compose up -d` (MySQL 8.0 already configured)
+- DB: gassit on 127.0.0.1:3306, user: gassit, password: secret (from docker-compose.yml)
+- Run migrations: `cd backend && php artisan migrate --force`
+- PHP syntax check: `php -l <file>`
+- Composer at ~/bin/composer (installed manually)
+- Laravel 12 with Sanctum 4.x for API auth
+- `park_user` pivot: admin/main_manager have implicit park access (enforced in app logic, not DB)
+- All 92 PRD stories completed — full implementation history in progress.archive.txt
+
+# Ralph Progress Log
+Started: Sat Mar  7 00:34:23 WEST 2026
+All 92 stories completed as of 2026-03-09. See progress.archive.txt for full history.
+---

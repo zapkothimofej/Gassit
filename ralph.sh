@@ -92,7 +92,12 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     OUTPUT=$(cat "$SCRIPT_DIR/prompt.md" | amp --dangerously-allow-all 2>&1 | tee /dev/stderr) || true
   else
     # Claude Code: use --dangerously-skip-permissions for autonomous operation, --print for output
-    OUTPUT=$(claude --dangerously-skip-permissions --print < "$SCRIPT_DIR/CLAUDE.md" 2>&1 | tee /dev/stderr) || true
+    TMPFILE=$(mktemp)
+    echo "[$(date '+%H:%M:%S')] Claude arbeitet... (kann 10-20 Min dauern)"
+    claude --dangerously-skip-permissions --verbose -p "$(cat "$SCRIPT_DIR/CLAUDE.md")" 2>&1 | tee "$TMPFILE"
+    OUTPUT=$(cat "$TMPFILE")
+    rm -f "$TMPFILE"
+    echo "[$(date '+%H:%M:%S')] Iteration fertig."
   fi
   
   # Check for completion signal
