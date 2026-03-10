@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Unit;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ContractService
 {
@@ -53,22 +54,24 @@ class ContractService
             ];
         }
 
-        $contract->update([
-            'status'                  => $newStatus,
-            'terminated_at'           => $terminatedAt,
-            'termination_notice_date' => $noticeDateStr,
-            'termination_reason_id'   => $reasonId,
-        ]);
+        return DB::transaction(function () use ($contract, $newStatus, $noticeDateStr, $reasonId, $actorId, $terminatedAt) {
+            $contract->update([
+                'status'                  => $newStatus,
+                'terminated_at'           => $terminatedAt,
+                'termination_notice_date' => $noticeDateStr,
+                'termination_reason_id'   => $reasonId,
+            ]);
 
-        $unit = $contract->unit()->with('park')->first();
-        if ($unit) {
-            $unit->update(['status' => 'maintenance']);
-        }
+            $unit = $contract->unit()->with('park')->first();
+            if ($unit) {
+                $unit->update(['status' => 'maintenance']);
+            }
 
-        $this->createFinalInvoice($contract, $unit, $terminatedAt);
-        $this->createTerminationInspection($contract, $unit, $actorId);
+            $this->createFinalInvoice($contract, $unit, $terminatedAt);
+            $this->createTerminationInspection($contract, $unit, $actorId);
 
-        return ['contract' => $contract];
+            return ['contract' => $contract->fresh()->load(['customer', 'unit'])];
+        });
     }
 
     private function createFinalInvoice(Contract $contract, ?Unit $unit, Carbon $terminatedAt): void
