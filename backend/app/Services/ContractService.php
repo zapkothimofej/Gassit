@@ -6,11 +6,13 @@ use App\Models\Contract;
 use App\Models\DamageReport;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Unit;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 
 class ContractService
 {
+    public function __construct(private readonly InvoiceService $invoiceService) {}
+
     public const STATUS_TRANSITIONS = [
         'draft'               => ['awaiting_signature', 'declined'],
         'awaiting_signature'  => ['signed', 'declined'],
@@ -30,7 +32,7 @@ class ContractService
     /**
      * @return array{contract: Contract}|array{error: string, earliest: string}
      */
-    public function terminate(Contract $contract, string $type, string $noticeDateStr, ?int $reasonId): array
+    public function terminate(Contract $contract, string $type, string $noticeDateStr, ?int $reasonId, ?int $actorId): array
     {
         $newStatus = $type === 'customer'
             ? 'terminated_by_customer'
@@ -64,12 +66,12 @@ class ContractService
         }
 
         $this->createFinalInvoice($contract, $unit, $terminatedAt);
-        $this->createTerminationInspection($contract, $unit);
+        $this->createTerminationInspection($contract, $unit, $actorId);
 
         return ['contract' => $contract];
     }
 
-    private function createFinalInvoice(Contract $contract, mixed $unit, Carbon $terminatedAt): void
+    private function createFinalInvoice(Contract $contract, ?Unit $unit, Carbon $terminatedAt): void
     {
         $park = $unit?->park;
         if (!$park) {
@@ -91,8 +93,7 @@ class ContractService
             return;
         }
 
-        $invoiceService = new InvoiceService();
-        $invoiceNumber  = $invoiceService->generateInvoiceNumber($park);
+        $invoiceNumber = $this->invoiceService->generateInvoiceNumber($park);
 
         $invoice = Invoice::create([
             'contract_id'    => $contract->id,
@@ -120,7 +121,7 @@ class ContractService
         ]);
     }
 
-    private function createTerminationInspection(Contract $contract, mixed $unit): void
+    private function createTerminationInspection(Contract $contract, ?Unit $unit, ?int $actorId): void
     {
         if (!$unit) {
             return;
@@ -129,7 +130,7 @@ class ContractService
         DamageReport::create([
             'unit_id'                   => $unit->id,
             'contract_id'               => $contract->id,
-            'reported_by'               => Auth::id(),
+            'reported_by'               => $actorId,
             'description'               => 'Termination inspection',
             'status'                    => 'reported',
             'is_termination_inspection' => true,

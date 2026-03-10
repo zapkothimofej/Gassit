@@ -254,7 +254,8 @@ class ContractController extends Controller
             $contract,
             $data['termination_type'],
             $data['termination_notice_date'],
-            $data['termination_reason_id'] ?? null
+            $data['termination_reason_id'] ?? null,
+            $request->user()?->id
         );
 
         if (isset($result['error'])) {
