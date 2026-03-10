@@ -51,7 +51,7 @@ class MailController extends Controller
 
         $data['active'] = $data['active'] ?? true;
         if (isset($data['body_html'])) {
-            $data['body_html'] = $this->sanitizeHtml($data['body_html']);
+            $data['body_html'] = $this->purifyHtml($data['body_html']);
         }
         $template = MailTemplate::create($data);
 
@@ -84,7 +84,7 @@ class MailController extends Controller
 
         $old = $template->toArray();
         if (isset($data['body_html'])) {
-            $data['body_html'] = $this->sanitizeHtml($data['body_html']);
+            $data['body_html'] = $this->purifyHtml($data['body_html']);
         }
         $template->update($data);
 
@@ -347,7 +347,7 @@ class MailController extends Controller
     // Helpers
     // -------------------------------------------------------------------------
 
-    // sanitizeHtml provided by SanitizesHtml trait
+    // purifyHtml provided by SanitizesHtml trait
 
     private function substitute(string $text, array $variables): string
     {
