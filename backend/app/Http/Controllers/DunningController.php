@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Console\Commands\ProcessDunning;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\Payment;
+use App\Services\DunningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DunningController extends Controller
 {
+    public function __construct(private readonly DunningService $dunningService) {}
+
     public function debtors(Request $request): JsonResponse
     {
         $query = Customer::query()
@@ -79,7 +79,7 @@ class DunningController extends Controller
         ]);
 
         return response()->json([
-            'message'            => 'Dunning paused for 30 days.',
+            'message'              => 'Dunning paused for 30 days.',
             'dunning_paused_until' => $pauseUntil,
         ]);
     }
@@ -98,20 +98,17 @@ class DunningController extends Controller
             return response()->json(['message' => 'No overdue invoices found.'], 422);
         }
 
-        $fees = [1 => 5.00, 2 => 10.00, 3 => 30.00];
-        $command = new ProcessDunning();
-
         $escalated = 0;
 
         foreach ($overdueInvoices as $invoice) {
             $currentLevel = $invoice->dunningRecords->max('level') ?? 0;
 
-            if ($currentLevel >= 3) {
+            if ($currentLevel >= DunningService::MAX_LEVEL) {
                 continue;
             }
 
             $nextLevel = $currentLevel + 1;
-            $command->escalateInvoice($invoice, $customer, $nextLevel, $fees[$nextLevel]);
+            $this->dunningService->escalateInvoice($invoice, $customer, $nextLevel, DunningService::FEES[$nextLevel]);
             $escalated++;
         }
 
@@ -149,44 +146,22 @@ class DunningController extends Controller
             return response()->json(['message' => 'No overdue invoices to resolve.'], 422);
         }
 
-        DB::transaction(function () use ($overdueInvoices, $customer, $request, $data) {
-            foreach ($overdueInvoices as $invoice) {
-                $invoice->update([
-                    'status'  => 'paid',
-                    'paid_at' => now(),
-                ]);
+        $count = $this->dunningService->resolveCustomer($customer, $data['reference'], $data['notes']);
 
-                Payment::create([
-                    'invoice_id'       => $invoice->id,
-                    'amount'           => $invoice->total_amount,
-                    'currency'         => 'EUR',
-                    'payment_method'   => 'bank_transfer',
-                    'status'           => 'paid',
-                    'paid_at'          => now(),
-                    'mollie_payment_id' => $data['reference'],
-                ]);
-            }
+        AuditLog::create([
+            'user_id'    => $request->user()->id,
+            'action'     => 'dunning_resolved',
+            'model_type' => Customer::class,
+            'model_id'   => $customer->id,
+            'old_values' => ['status' => $customer->getOriginal('status')],
+            'new_values' => [
+                'status'            => 'tenant',
+                'resolved_invoices' => $count,
+                'reference'         => $data['reference'],
+                'notes'             => $data['notes'],
+            ],
+        ]);
 
-            $customer->update([
-                'status'               => 'tenant',
-                'dunning_paused_until' => null,
-            ]);
-
-            AuditLog::create([
-                'user_id'    => $request->user()->id,
-                'action'     => 'dunning_resolved',
-                'model_type' => Customer::class,
-                'model_id'   => $customer->id,
-                'old_values' => ['status' => $customer->getOriginal('status')],
-                'new_values' => [
-                    'status'            => 'tenant',
-                    'resolved_invoices' => $overdueInvoices->count(),
-                    'reference'         => $data['reference'],
-                    'notes'             => $data['notes'],
-                ],
-            ]);
-        });
-
-        return response()->json(['message' => 'Resolved ' . $overdueInvoices->count() . ' invoice(s). Customer status reset to tenant.']);
+        return response()->json(['message' => 'Resolved ' . $count . ' invoice(s). Customer status reset to tenant.']);
     }
 }
